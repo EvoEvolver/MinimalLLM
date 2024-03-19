@@ -16,7 +16,10 @@ chat = Chat()
 chat += "Give me a random number from 1 to 10"
 res = chat.complete(cache=True)
 print(res)
-# Chats are cached if you like
+chat = Chat()
+chat += "Give a json dict with keys 'a' and 'b' and values 1 and 2"
+res = chat.complete(parse="dict", cache=True)
+print(res)
 ```
 
 Embedding
