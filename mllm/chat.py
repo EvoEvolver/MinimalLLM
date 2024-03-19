@@ -13,7 +13,9 @@ from mllm.cache.cache_service import caching
 from mllm.debug.logger import Logger
 from mllm.config import default_models
 from mllm.debug.show_table import show_json_table
+from mllm.utils import Parse
 
+n_chat_retry = 3
 
 def encode_image(image_file: BytesIO):
     return base64.b64encode(image_file.read()).decode('utf-8')
@@ -158,23 +160,36 @@ class Chat:
     ## Chat completion functions
     """
 
-    def complete(self, model=None, cache=False, options=None):
+    def complete(self, model=None, cache=False, expensive=False, parse=None, retry=True, options=None):
         if options is None:
             options = {}
         if model is None:
-            model = default_models["normal"]
+            if not expensive:
+                model = default_models["normal"]
+            else:
+                model = default_models["expensive"]
             if self.contains_image():
                 model = default_models["vision"]
-        return self._complete_chat_impl(model, cache, options)
-
-    def complete_expensive(self, model=None, cache=False, options=None):
-        if options is None:
-            options = {}
-        if model is None:
-            model = default_models["expensive"]
-            if self.contains_image():
-                model = default_models["vision"]
-        return self._complete_chat_impl(model, cache, options)
+        for n_tries in range(n_chat_retry):
+            try:
+                res = self._complete_chat_impl(model, cache, options)
+                if parse is not None:
+                    match parse:
+                        case "dict":
+                            res = Parse.dict(res)
+                        case "list":
+                            res = Parse.list(res)
+                        case "obj":
+                            res = Parse.obj(res)
+                        case _:
+                            raise ValueError("Invalid parse type")
+                return res
+            except Exception as e:
+                if not retry:
+                    raise e
+                print(e)
+                print("Retrying...")
+        raise Exception("Failed to complete chat")
 
     def _complete_chat_impl(self, model: str, use_cache: bool, options):
         messages = self.get_messages_to_api()
