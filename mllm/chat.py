@@ -158,27 +158,27 @@ class Chat:
     ## Chat completion functions
     """
 
-    def complete(self, model=None, to_cache=True, options=None):
+    def complete(self, model=None, cache=False, options=None):
         if options is None:
             options = {}
         if model is None:
             model = default_models["normal"]
             if self.contains_image():
                 model = default_models["vision"]
-        return self._complete_chat_impl(model, to_cache, options)
+        return self._complete_chat_impl(model, cache, options)
 
-    def complete_expensive(self, model=None, to_cache=True, options=None):
+    def complete_expensive(self, model=None, cache=False, options=None):
         if options is None:
             options = {}
         if model is None:
             model = default_models["expensive"]
             if self.contains_image():
                 model = default_models["vision"]
-        return self._complete_chat_impl(model, to_cache, options)
+        return self._complete_chat_impl(model, cache, options)
 
-    def _complete_chat_impl(self, model: str, to_cache: bool, options):
+    def _complete_chat_impl(self, model: str, use_cache: bool, options):
         messages = self.get_messages_to_api()
-        if to_cache:
+        if use_cache:
             cache = caching.cache_kv.read_cache(messages, "chat")
             if cache is not None and cache.is_valid():
                 self.add_assistant_message(cache.value)
@@ -193,7 +193,7 @@ class Chat:
                 chat_logger.add_log(self)
         self.add_assistant_message(res)
 
-        if to_cache and cache is not None:
+        if use_cache and cache is not None:
             cache.set_cache(res)
         return res
 
