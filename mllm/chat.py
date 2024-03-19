@@ -108,16 +108,26 @@ class Chat:
         """
         :return: messages for sending to model APIs
         """
-        res = []
+        messages = []
+        if self.system_message is not None:
+            messages.append({
+                "role": "system",
+                "content": [{
+                    "type": "text",
+                    "text": self.system_message
+                }]
+            })
+
         if len(self.messages) == 0:
-            return res
+            return messages
+
         content_list = []
         curr_role = self.messages[0]["role"]
         content_dict = {
             "role": curr_role,
             "content": content_list
         }
-        res.append(content_dict)
+        messages.append(content_dict)
 
         for message in self.messages:
             if message["role"] != curr_role:
@@ -127,10 +137,10 @@ class Chat:
                     "role": curr_role,
                     "content": content_list
                 }
-                res.append(content_dict)
+                messages.append(content_dict)
             content_list.append(message["content"])
 
-        return res
+        return messages
 
     def contains_image(self):
         for message in self.messages:
@@ -193,8 +203,8 @@ class Chat:
 
     def __str__(self):
         res = []
-        log_list = self.get_messages_to_api()
-        for entry in log_list:
+        message_to_api = self.get_messages_to_api()
+        for entry in message_to_api:
             content = []
             for item in entry["content"]:
                 if item["type"] == "text":
