@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import os
+import atexit
 
 from mllm.cache.cache_embedding import CacheTableEmbed
 from mllm.cache.cache_kv import CacheTableKV
@@ -110,6 +111,7 @@ class RefreshCacheContext:
         else:
             if not self.already_refreshed:
                 self.cache_kv.refresh_all = False
+        self.cache_kv.apply_cache_update()
 
 class DisableCacheContext:
     def __init__(self, cache_kv: CacheTableKV):
@@ -121,3 +123,6 @@ class DisableCacheContext:
 
 
 caching = CacheService()
+
+# save cache on exit
+atexit.register(caching.save)
