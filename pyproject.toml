@@ -9,6 +9,7 @@ version = "0.1.0"
 authors = [
     { name = "Zijian Zhang" }
 ]
+dynamic = ["dependencies"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
