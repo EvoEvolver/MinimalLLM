@@ -114,10 +114,7 @@ class Chat:
         if self.system_message is not None:
             messages.append({
                 "role": "system",
-                "content": [{
-                    "type": "text",
-                    "text": self.system_message
-                }]
+                "content": self.system_message
             })
 
         if len(self.messages) == 0:
@@ -141,6 +138,19 @@ class Chat:
                 }
                 messages.append(content_dict)
             content_list.append(message["content"])
+
+        # Merge text messages into one
+        for message in messages:
+            content_list = []
+            merge_failed = False
+            for item in message["content"]:
+                if item["type"] == "text":
+                    content_list.append(item["text"])
+                else:
+                    merge_failed = True
+                    break
+            if not merge_failed:
+                message["content"] = "\n\n".join(content_list)
 
         return messages
 
@@ -188,6 +198,9 @@ class Chat:
                 if not retry:
                     raise e
                 print(e)
+                # print stack here
+                import traceback
+                print(traceback.format_exc())
                 print("Retrying...")
         raise Exception("Failed to complete chat")
 
