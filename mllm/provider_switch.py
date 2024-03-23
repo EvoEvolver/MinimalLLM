@@ -1,5 +1,7 @@
 from mllm.config import default_models
 
+verbose = True
+
 def set_default_to_google():
     default_models["normal"] = "gemini-1.0-pro"
     default_models["expensive"] = "gemini-1.0-pro"
@@ -16,4 +18,10 @@ def set_default_to_anthropic(expensive_vision_model=False):
     default_models["normal"] = "claude-3-sonnet-20240229"
     default_models["expensive"] = "claude-3-opus-20240229"
     default_models["vision"] = "claude-3-sonnet-20240229" if not expensive_vision_model else "claude-3-opus-20240229"
+    default_models["embedding"] = "text-embedding-3-large"
+
+def set_default_to_replicate():
+    default_models["normal"] = "replicate/meta/llama-2-13b-chat"
+    default_models["expensive"] = "replicate/meta/llama-2-70b-chat"
+    default_models["vision"] = "gpt-4-vision-preview"
     default_models["embedding"] = "text-embedding-3-large"
