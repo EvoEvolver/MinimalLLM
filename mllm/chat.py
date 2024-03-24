@@ -235,13 +235,16 @@ class Chat:
         res = []
         message_to_api = self.get_messages_to_api()
         for entry in message_to_api:
-            content = []
-            for item in entry["content"]:
-                if item["type"] == "text":
-                    content.append(item["text"])
-                elif item["type"] == "image":
-                    content.append("<image/>")
-            content = "\n".join(content)
+            if isinstance(entry["content"], str):
+                content = entry["content"]
+            else:
+                content = []
+                for item in entry["content"]:
+                    if item["type"] == "text":
+                        content.append(item["text"])
+                    elif item["type"] == "image":
+                        content.append("<image/>")
+                content = "\n".join(content)
             res.append(f"------{entry['role']}------\n {content}")
         return "\n".join(res)
 
