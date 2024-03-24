@@ -11,7 +11,7 @@ from litellm import completion
 
 from mllm.cache.cache_service import caching
 from mllm.debug.logger import Logger
-from mllm.config import default_models
+from mllm.config import default_models, default_options
 from mllm.debug.show_table import show_json_table
 from mllm.utils import Parse
 
@@ -175,6 +175,7 @@ class Chat:
     def complete(self, model=None, cache=False, expensive=False, parse=None, retry=True, options=None):
         if options is None:
             options = {}
+        options = {**default_options, **options}
         if model is None:
             if not expensive:
                 model = default_models["normal"]

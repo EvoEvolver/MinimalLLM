@@ -5,3 +5,12 @@ default_models = {
     "vision": "gpt-4-vision-preview",
     "embedding": "text-embedding-3-large"
 }
+
+
+default_options = {
+    "temperature": 0.5,
+    "max_tokens": None,
+    "frequency_penalty": None,
+    "timeout": 600,
+    "seed": None,
+}
