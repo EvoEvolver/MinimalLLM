@@ -20,3 +20,10 @@ def test_chat_plus():
     chat += "Who is your developer?"
     res = chat.complete()
     print(res)
+
+
+def test_system_message():
+    chat = Chat(system_message="You are an assistant who only reply in `yes` or `no`")
+    chat += "Are you a human?"
+    res = chat.complete()
+    print(res)

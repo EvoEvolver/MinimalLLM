@@ -141,6 +141,8 @@ class Chat:
 
         # Merge text messages into one
         for message in messages:
+            if message["role"] != "user":
+                continue
             content_list = []
             merge_failed = False
             for item in message["content"]:
