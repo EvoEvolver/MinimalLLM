@@ -9,6 +9,10 @@ def show_json_table(json_list):
     :param json_list: The json data to show
     :return:
     """
+    if len(json_list) == 0:
+        print("No data to show in show_json_table(). Skipping...")
+        return
+
     table_html = json2html.convert(json=json_list, escape=False)
     # write the html to a file
     html = f"""
