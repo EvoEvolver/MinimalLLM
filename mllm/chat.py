@@ -37,6 +37,14 @@ class ChatLogger(Logger):
             })
         show_json_table(info_list)
 
+
+def parse_res(parse, res):
+    if parse not in ["dict", "list", "obj", "quotes", "colon"]:
+        raise ValueError("Invalid parse type")
+    res = Parse.__dict__[parse](res)
+    return res
+
+
 class Chat:
     """
     Class for chat completion
@@ -187,15 +195,7 @@ class Chat:
             try:
                 res = self._complete_chat_impl(model, cache, options)
                 if parse is not None:
-                    match parse:
-                        case "dict":
-                            res = Parse.dict(res)
-                        case "list":
-                            res = Parse.list(res)
-                        case "obj":
-                            res = Parse.obj(res)
-                        case _:
-                            raise ValueError("Invalid parse type")
+                    res = parse_res(parse, res)
                 return res
             except Exception as e:
                 if not retry:

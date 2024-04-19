@@ -50,6 +50,42 @@ class Parse:
             raise ValueError(f"Invalid json: {src}")
         return res
 
+    @staticmethod
+    def quotes(src: str):
+        """
+        Parse a string that is enclosed by quotes ```
+        :param src:
+        :return: contents of the quoted string
+        """
+        split_lines = src.split("\n")
+        for start, line in enumerate(split_lines):
+            if line.startswith("```"):
+                title = line[3:]
+                break
+        else:
+            raise ValueError("No closing quotes")
+        for end in range(start+1, len(split_lines)):
+            if split_lines[end].startswith("```"):
+                break
+        else:
+            raise ValueError("No closing quotes")
+        contents = "\n".join(split_lines[start + 1: end])
+        return contents
+
+    @staticmethod
+    def colon(src: str):
+        """
+        Parse a string that is separated by colons
+        :param src:
+        :return: the contents after the colon
+        """
+        split = src.split(":")
+        if len(split) != 2:
+            raise ValueError("Invalid colon string")
+        contents = split[1].strip()
+        return contents
+
+
 """
 # Parallel map
 """
