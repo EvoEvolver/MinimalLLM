@@ -4,7 +4,7 @@ import json
 import os
 import sys
 import time
-from typing import List
+from typing import List, Any
 
 from tenacity import retry, stop_after_attempt, wait_fixed, \
     retry_if_exception, stop_after_delay
@@ -128,7 +128,7 @@ def parallel_map(func, *args, n_workers=None):
 """
 
 
-def nested_map(func, nested_list: List[List | any]):
+def nested_map(func, nested_list: List[List | Any]):
     """
     Apply func to each element in nested_list and return a nested list with the same structure
     Precondition: list nested can only contain either list or non-list
