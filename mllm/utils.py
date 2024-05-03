@@ -128,7 +128,7 @@ def parallel_map(func, *args, n_workers=None):
 """
 
 
-def nested_map(func, nested_list: List[List | Any]):
+def nested_map(func, nested_list: List):
     """
     Apply func to each element in nested_list and return a nested list with the same structure
     Precondition: list nested can only contain either list or non-list
