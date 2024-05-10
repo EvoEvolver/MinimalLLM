@@ -109,7 +109,7 @@ class Chat:
             media_type = "jpeg"
 
         img_io.close()
-        self._add_image_message(base64_image, media_type, more)
+        self._add_image_message(base64_image, media_type)
 
     def add_assistant_message(self, content: any):
         self._add_message(content, "assistant")
