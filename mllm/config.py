@@ -8,7 +8,7 @@ default_models = {
 
 
 default_options = {
-    "temperature": 0.5,
+    "temperature": 0.2,
     "max_tokens": None,
     "frequency_penalty": None,
     "timeout": 600,
