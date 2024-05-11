@@ -172,7 +172,7 @@ class Chat:
                     if isinstance(item, dict) and item["type"] == "image":
                         return True
             elif isinstance(content, dict):
-                if content["type"] == "image":
+                if "image_url" in content:
                     return True
         return False
 
