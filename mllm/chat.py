@@ -181,6 +181,15 @@ class Chat:
     """
 
     def complete(self, model=None, cache=False, expensive=False, parse=None, retry=True, options=None):
+        """
+        :param model: The name of the model to use. If None, the default model will be used.
+        :param cache: Whether to use cache. If True, the result will be cached.
+        :param expensive: Whether to use the expensive model. If True, the default expensive model will be used.
+        :param parse: How to parse the result. Options: "dict", "list", "obj", "quotes", "colon"
+        :param retry: Whether to retry if the completion fails.
+        :param options: Additional options for the completion model.
+        :return: The completion result from the model. If parse is set, a parsed result will be returned.
+        """
         if options is None:
             options = {}
         options = {**default_options, **options}
@@ -200,6 +209,8 @@ class Chat:
             except Exception as e:
                 if not retry:
                     raise e
+                # Disable cache for retry
+                cache = False
                 print(e)
                 # print stack here
                 import traceback
