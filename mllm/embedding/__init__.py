@@ -1,18 +1,10 @@
 from __future__ import annotations
 
 import hashlib
-from typing import List
 from litellm import embedding
 from mllm.cache.cache_service import caching
 from mllm.config import default_models
 
-def flatten_nested_list(texts: list[list[str]]) -> (List[float], List[int]):
-    flattened_texts = []
-    index_start = []
-    for i, texts_ in enumerate(texts):
-        index_start.append(len(flattened_texts))
-        flattened_texts.extend(texts_)
-    return flattened_texts, index_start
 
 
 def get_embeddings(texts: list[str], model=None) -> list[list[float]]:

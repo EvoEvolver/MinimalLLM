@@ -93,6 +93,14 @@ class VectorStore:
 
         summed_similarities = self.similarity_function(self, flatten_inner_prod, item_indices, items_to_search)
 
+        # Rank items
+
+        item_rank = np.argsort(summed_similarities)[::-1]
+        summed_similarities = summed_similarities[item_rank]
+        items_to_search = [items_to_search[i] for i in item_rank]
+
+        EmbedSearchLogger.add_log_to_all({"items": items_to_search, "similarities": summed_similarities})
+
         return summed_similarities, items_to_search
 
 
