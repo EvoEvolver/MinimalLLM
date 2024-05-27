@@ -2,7 +2,7 @@ from typing import List, Callable
 
 import numpy as np
 
-from mllm import get_embeddings
+from mllm.embedding.get import get_embeddings
 from mllm.debug.logger import Logger
 
 
@@ -67,7 +67,13 @@ class VectorStore:
         self.items_to_index = new_items_to_index
         self._vectors = None
 
-    def get_similarities(self, vec, items_to_search: List = None) -> [np.ndarray, List]:
+    def get_similarities_from_str(self, query: str):
+        vec = get_embeddings([query])
+        vec = np.array(vec)
+        summed_similarities, items_to_search = self.get_similarities_from_vec(vec)
+        return items_to_search
+
+    def get_similarities_from_vec(self, vec, items_to_search: List = None) -> [np.ndarray, List]:
         if self._vectors is None:
             self._vectors = np.array(self.vectors)
         if items_to_search is None:
@@ -137,3 +143,7 @@ def get_vector_store(items: List, get_srcs: Callable[[str], List[str]]) -> Vecto
     embeddings = get_embeddings(src_list)
     vector_store.add_vecs(embeddings, item_list)
     return vector_store
+
+
+def get_vector_store_from_str(str_list: List[str]) -> VectorStore:
+    return get_vector_store(str_list, lambda x: [x])
