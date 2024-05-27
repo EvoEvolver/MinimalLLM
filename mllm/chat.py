@@ -21,16 +21,35 @@ def encode_image(image_file: BytesIO):
     return base64.b64encode(image_file.read()).decode('utf-8')
 
 
+def get_chat_in_html(chat: Chat):
+    res = []
+    message_to_api = chat.get_messages_to_api()
+    for entry in message_to_api:
+        if isinstance(entry["content"], str):
+            content = entry["content"]
+        else:
+            content = []
+            for item in entry["content"]:
+                if item["type"] == "text":
+                    text = item["text"]
+                    text = html.escape(text)
+                    text = text.replace("\n", "<br/>")
+                    content.append(text)
+                elif item["type"] == "image_url":
+                    content.append("<image src='{}' style='max-height: 200px;'/>".format(item["image_url"]["url"]))
+            content = "<br/>".join(content)
+        res.append(f"------{entry['role']}------<br/> {content}")
+    return "<br/>".join(res)
+
 class ChatLogger(Logger):
     active_loggers = []
 
     def display_log(self):
-        contents = [str(chat) for chat in self.log_list]
+        contents = [get_chat_in_html(chat) for chat in self.log_list]
         filenames = [caller_name.split("/")[-1] for caller_name in self.caller_list]
         info_list = []
         for i in range(len(contents)):
-            content = html.escape(contents[i])
-            content = content.replace("\n", "<br/>")
+            content = contents[i]
             info_list.append({
                 "filename": filenames[i],
                 "content": content
@@ -254,7 +273,7 @@ class Chat:
                 for item in entry["content"]:
                     if item["type"] == "text":
                         content.append(item["text"])
-                    elif item["type"] == "image":
+                    elif item["type"] == "image_url":
                         content.append("<image/>")
                 content = "\n".join(content)
             res.append(f"------{entry['role']}------\n {content}")

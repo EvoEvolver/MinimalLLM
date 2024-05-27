@@ -14,3 +14,9 @@ default_options = {
     "timeout": 600,
     "seed": None,
 }
+
+
+class CacheOptions:
+    def __init__(self):
+        self.max_embedding_vecs = 1000
+        self.max_chat = 1000
