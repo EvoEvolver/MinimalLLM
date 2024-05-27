@@ -21,7 +21,7 @@ class Cache:
         self.value = value
         # self.hash should be the same as get_hash(input, type)
         self.hash: str = hash
-        self.input: any = input
+        self.input: any = ""#input
         self.type: str = type
         self.meta = meta
 
