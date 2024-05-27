@@ -2,6 +2,7 @@ from typing import List, Callable
 
 import numpy as np
 
+from mllm.debug.show_table import show_json_table
 from mllm.embedding.get import get_embeddings
 from mllm.debug.logger import Logger
 
@@ -10,12 +11,22 @@ class EmbedSearchLogger(Logger):
     active_loggers = []
 
     def display_log(self):
-        pass
+        contents = [log for log in self.log_list]
+        filenames = [caller_name.split("/")[-1] for caller_name in self.caller_list]
+        info_list = []
+        for i in range(len(contents)):
+            content = contents[i]
+            info_list.append({
+                "filename": filenames[i],
+                "content": content
+            })
+        show_json_table(info_list)
 
 
 class VectorStore:
     def __init__(self, similarity_function=None):
         self.vectors = []
+        self.srcs = []
         self.weights = []
         self.items_to_index = {}
         self._vectors = None
@@ -25,7 +36,6 @@ class VectorStore:
         else:
             self.similarity_function = similarity_by_exp
 
-
     def add_vecs(self, vecs: List, items: List, weights: List = None):
         assert len(vecs) == len(items)
         original_len = len(self.items_to_index)
@@ -33,6 +43,8 @@ class VectorStore:
         if weights is None:
             weights = np.ones(len(vecs))
         self.weights.extend(weights)
+        for item in items:
+            assert item not in self.items_to_index
         for i, item in enumerate(items):
             index_start = i + original_len
             if item not in self.items_to_index:
@@ -55,6 +67,7 @@ class VectorStore:
         new_vectors = []
         new_items_to_index = {}
         new_weights = []
+        new_srcs = []
         for item in self.items_to_index.keys():
             indices_tuple = self.items_to_index[item]
             vectors_for_item = self.vectors[indices_tuple[0]:indices_tuple[1]]
@@ -67,13 +80,17 @@ class VectorStore:
         self.items_to_index = new_items_to_index
         self._vectors = None
 
-    def get_similarities_from_str(self, query: str):
-        vec = get_embeddings([query])
-        vec = np.array(vec)
-        summed_similarities, items_to_search = self.get_similarities_from_vec(vec)
-        return items_to_search
 
-    def get_similarities_from_vec(self, vec, items_to_search: List = None) -> [np.ndarray, List]:
+    def get_top_k_items(self, query: str | List[str], k: int = 10) -> List[str]:
+        summed_similarities, items_to_search = self.get_similarities(query)
+        return items_to_search[:k]
+
+    def get_similarities(self, query: str | List[str], items_to_search: List = None) -> [np.ndarray, List]:
+        if isinstance(query, str):
+            query = [query]
+        vec = get_embeddings(query)
+        vec = np.array(vec)
+
         if self._vectors is None:
             self._vectors = np.array(self.vectors)
         if items_to_search is None:
@@ -100,14 +117,32 @@ class VectorStore:
         summed_similarities = self.similarity_function(self, flatten_inner_prod, item_indices, items_to_search)
 
         # Rank items
-
         item_rank = np.argsort(summed_similarities)[::-1]
         summed_similarities = summed_similarities[item_rank]
         items_to_search = [items_to_search[i] for i in item_rank]
 
-        EmbedSearchLogger.add_log_to_all({"items": items_to_search, "similarities": summed_similarities})
+        top_k = 10
+        EmbedSearchLogger.add_log_to_all(get_item_similarity_log(self, flatten_inner_prod, items_to_search[:top_k], query))
 
         return summed_similarities, items_to_search
+
+def get_item_similarity_log(vector_store: VectorStore, flatten_inner_prod, items, query):
+    contents = []
+    for item in items:
+        vec_index_tuple = vector_store.items_to_index[item]
+        inner_prod_list = flatten_inner_prod[vec_index_tuple[0]:vec_index_tuple[1]]
+        max_inner_prod_list = np.max(inner_prod_list, 1)
+        max_index = np.argmax(max_inner_prod_list)
+        matched_src_inner_prod = inner_prod_list[max_index]
+        matched_query = query[np.argmax(matched_src_inner_prod)]
+        content = f"""
+Item: {repr(item)}
+Max Inner Product: {max(matched_src_inner_prod)}
+Matched Query: {matched_query}
+"""
+        contents.append(content)
+    res = "\n".join(contents)
+    return res.replace("\n", "<br/>")
 
 
 def similarity_by_exp(vector_store, flatten_inner_prod, item_indices, items_to_search):

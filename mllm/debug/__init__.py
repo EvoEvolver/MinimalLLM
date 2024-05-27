@@ -7,3 +7,10 @@ def display_chats(disable=None):
         return EmptyContext()
     from mllm.chat import ChatLogger
     return ChatLogger()
+
+
+def display_embed_search(disable=None):
+    if disable is not None:
+        return EmptyContext()
+    from mllm.embedding.vector_store import EmbedSearchLogger
+    return EmbedSearchLogger()
