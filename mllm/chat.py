@@ -249,10 +249,9 @@ class Chat:
 
         res = completion(model, messages=messages, **options).choices[0].message.content
 
-        if len(ChatLogger.active_loggers) > 0:
-            for chat_logger in ChatLogger.active_loggers:
-                chat_logger.add_log(self, stack_depth=3)
         self.add_assistant_message(res)
+
+        ChatLogger.add_log_to_all(self, stack_depth=2)
 
         if use_cache and cache is not None:
             cache.set_cache(res)

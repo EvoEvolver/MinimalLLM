@@ -57,10 +57,10 @@ class VectorStore:
         self.item_to_index[item] = len(self.stored_items) - 1
 
     def get_top_k_items(self, query: str | List[str], k: int = 10) -> List[str]:
-        summed_similarities, items_to_search = self.get_similarities(query)
+        summed_similarities, items_to_search = self.get_similarities(query, log_stack=2)
         return items_to_search[:k]
 
-    def get_similarities(self, query: str | List[str], items_to_search: List = None) -> [np.ndarray, List]:
+    def get_similarities(self, query: str | List[str], items_to_search: List = None, log_stack=1) -> [np.ndarray, List]:
         if isinstance(query, str):
             query = [query]
         query_vecs = np.array(get_embeddings(query))
@@ -94,7 +94,7 @@ class VectorStore:
         items = [stored_item.item for stored_item in stored_items]
         inner_prod_list = [inner_prod_list[i] for i in item_rank]
 
-        EmbedSearchLogger.add_log_to_all(get_item_similarity_log(stored_items, inner_prod_list, query, top_k=10))
+        EmbedSearchLogger.add_log_to_all(get_item_similarity_log(stored_items, inner_prod_list, query, top_k=10), stack_depth=log_stack)
 
         return scores, items
 

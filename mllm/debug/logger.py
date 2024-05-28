@@ -25,16 +25,16 @@ class Logger:
             self.no_file_filter = True
         self.__class__.active_loggers = []
 
-    def add_log(self, log: any, stack_depth=2):
-        caller_path = inspect.stack()[stack_depth].filename
+    def add_log(self, log: any, stack_depth=0):
+        caller_path = inspect.stack()[stack_depth+1].filename
         if self.no_file_filter or caller_path in self.file_path_scope:
             self.caller_list.append(caller_path)
             self.log_list.append(log)
 
     @classmethod
-    def add_log_to_all(cls, log: any):
+    def add_log_to_all(cls, log: any, stack_depth=0):
         for logger in cls.active_loggers:
-            logger.add_log(log)
+            logger.add_log(log, stack_depth+1)
 
     def __enter__(self):
         # Add self to active_loggers
