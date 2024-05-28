@@ -243,6 +243,7 @@ class Chat:
             cache = caching.cache_kv.read_cache(messages, "chat")
             if cache is not None and cache.is_valid():
                 self.add_assistant_message(cache.value)
+                ChatLogger.add_log_to_all(self, stack_depth=2)
                 return cache.value
 
         options = options or {}
