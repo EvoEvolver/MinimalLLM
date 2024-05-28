@@ -22,64 +22,39 @@ class EmbedSearchLogger(Logger):
             })
         show_json_table(info_list)
 
-
-class VectorStore:
-    def __init__(self, similarity_function=None):
-        self.vectors = []
+class VectorStoreItem:
+    def __init__(self, item):
+        self.vectors = None
         self.srcs = []
         self.weights = []
-        self.items_to_index = {}
-        self._vectors = None
-        self.removed_items = set()
-        if similarity_function is not None:
-            self.similarity_function = similarity_function
+        self.item = item
+
+    def set_vectors(self, vector_list: List, start):
+        self.vectors = np.array(vector_list[start:start + len(self.srcs)])
+        return start + len(self.srcs)
+
+    def set_single_vectors(self):
+        self.vectors = np.array(get_embeddings(self.srcs))
+
+
+class VectorStore:
+    def __init__(self, score_function=None):
+        self.stored_items = []
+        self.item_to_index = {}
+        if score_function is not None:
+            self.score_function = score_function
         else:
-            self.similarity_function = similarity_by_exp
+            self.score_function = similarity_by_exp
 
-    def add_vecs(self, vecs: List, items: List, weights: List = None):
-        assert len(vecs) == len(items)
-        original_len = len(self.items_to_index)
-        self.vectors.extend(vecs)
-        if weights is None:
-            weights = np.ones(len(vecs))
-        self.weights.extend(weights)
-        for item in items:
-            assert item not in self.items_to_index
-        for i, item in enumerate(items):
-            index_start = i + original_len
-            if item not in self.items_to_index:
-                self.items_to_index[item] = [index_start, index_start + 1]
-            else:
-                self.items_to_index[item][1] = index_start + 1
-        self._vectors = None
-
-    def remove_items(self, items: List):
-        self.removed_items.update(items)
-        if len(items) > len(self.items_to_index) / 3:
-            self.flush_removed_indices()
-
-    def flush_removed_indices(self):
-        removed_indices = []
-        for item in self.removed_items:
-            if item in self.items_to_index:
-                removed_indices.extend(range(*self.items_to_index[item]))
-                del self.items_to_index[item]
-        new_vectors = []
-        new_items_to_index = {}
-        new_weights = []
-        new_srcs = []
-        for item in self.items_to_index.keys():
-            indices_tuple = self.items_to_index[item]
-            vectors_for_item = self.vectors[indices_tuple[0]:indices_tuple[1]]
-            new_items_to_index[item] = [len(new_vectors),
-                                        len(new_vectors) + len(vectors_for_item)]
-            new_vectors.extend(vectors_for_item)
-            new_weights.extend(self.weights[indices_tuple[0]:indices_tuple[1]])
-        self.weights = new_weights
-        self.vectors = new_vectors
-        self.items_to_index = new_items_to_index
-        self._vectors = None
-
+    def add_item(self, item, srcs: List[str], weights: List=None):
+        stored_item = VectorStoreItem(item)
+        stored_item.srcs = srcs
+        if weights is not None:
+            stored_item.weights = weights
+        else:
+            stored_item.weights = np.ones(len(srcs))
+        self.stored_items.append(stored_item)
+        self.item_to_index[item] = len(self.stored_items) - 1
 
     def get_top_k_items(self, query: str | List[str], k: int = 10) -> List[str]:
         summed_similarities, items_to_search = self.get_similarities(query)
@@ -88,82 +63,74 @@ class VectorStore:
     def get_similarities(self, query: str | List[str], items_to_search: List = None) -> [np.ndarray, List]:
         if isinstance(query, str):
             query = [query]
-        vec = get_embeddings(query)
-        vec = np.array(vec)
+        query_vecs = np.array(get_embeddings(query))
 
-        if self._vectors is None:
-            self._vectors = np.array(self.vectors)
+
         if items_to_search is None:
-            items_to_search = list(self.items_to_index.keys())
-        item_indices = []
-        remaining_items = []
-        for item in items_to_search:
-            if item in self.removed_items:
-                continue
-            vec_index_tuple = self.items_to_index.get(item, None)
-            if vec_index_tuple is None:
-                continue
-            item_indices.extend(range(*vec_index_tuple))
-            remaining_items.append(item)
-
-        items_to_search = remaining_items
-
-        # Decide the order of filtering by the number of items
-        if len(items_to_search) > len(self.items_to_index) / 2:
-            flatten_inner_prod = (self._vectors.dot(vec.T))[item_indices]
+            stored_items = self.stored_items
         else:
-            flatten_inner_prod = self._vectors[item_indices].dot(vec)
+            stored_items = [self.stored_items[self.item_to_index[item]] for item in items_to_search]
 
-        summed_similarities = self.similarity_function(self, flatten_inner_prod, item_indices, items_to_search)
+        no_vector_items = [stored_item for stored_item in stored_items if stored_item.vectors is None]
+
+        srcs = []
+        for stored_item in no_vector_items:
+            srcs.extend(stored_item.srcs)
+        vectors = get_embeddings(srcs)
+        start = 0
+        for stored_item in no_vector_items:
+            start = stored_item.set_vectors(vectors, start)
+
+        inner_prod_list = []
+        for stored_item in stored_items:
+            inner_prod_list.append(stored_item.vectors.dot(query_vecs.T))
+
+        scores = self.score_function(inner_prod_list)
 
         # Rank items
-        item_rank = np.argsort(summed_similarities)[::-1]
-        summed_similarities = summed_similarities[item_rank]
-        items_to_search = [items_to_search[i] for i in item_rank]
+        item_rank = np.argsort(scores)[::-1]
+        scores = scores[item_rank]
+        stored_items = [stored_items[i] for i in item_rank]
+        items = [stored_item.item for stored_item in stored_items]
+        inner_prod_list = [inner_prod_list[i] for i in item_rank]
 
-        top_k = 10
-        EmbedSearchLogger.add_log_to_all(get_item_similarity_log(self, flatten_inner_prod, items_to_search[:top_k], query))
+        EmbedSearchLogger.add_log_to_all(get_item_similarity_log(stored_items, inner_prod_list, query, top_k=10))
 
-        return summed_similarities, items_to_search
+        return scores, items
 
-def get_item_similarity_log(vector_store: VectorStore, flatten_inner_prod, items, query):
+def get_item_similarity_log(stored_items: List[VectorStoreItem], inner_prod_list, query, top_k=10):
     contents = []
-    for item in items:
-        vec_index_tuple = vector_store.items_to_index[item]
-        inner_prod_list = flatten_inner_prod[vec_index_tuple[0]:vec_index_tuple[1]]
-        max_inner_prod_list = np.max(inner_prod_list, 1)
-        max_index = np.argmax(max_inner_prod_list)
-        matched_src_inner_prod = inner_prod_list[max_index]
+    for i, stored_item in enumerate(stored_items):
+        inner_prod = inner_prod_list[i]
+        max_inner_prod = np.max(inner_prod, 1)
+        max_index = np.argmax(max_inner_prod)
+        matched_src_inner_prod = inner_prod[max_index]
         matched_query = query[np.argmax(matched_src_inner_prod)]
         content = f"""
-Item: {repr(item)}
+Item: {repr(stored_item.item)}
 Max Inner Product: {max(matched_src_inner_prod)}
 Matched Query: {matched_query}
+Matched Src : {stored_item.srcs[max_index]}
 """
         contents.append(content)
     res = "\n".join(contents)
     return res.replace("\n", "<br/>")
 
 
-def similarity_by_exp(vector_store, flatten_inner_prod, item_indices, items_to_search):
+def similarity_by_exp(inner_prod_list):
     a = 2.0
     b = 0.1
     # Batch normalization & Add bias
-    average_similarity = np.average(flatten_inner_prod)
-    flatten_inner_prod = flatten_inner_prod - average_similarity - b
+    avg_inner_prod_list = [np.average(inner_prod) for inner_prod in inner_prod_list]
+    avg_inner_prod_list = np.array(avg_inner_prod_list)
+    average_similarity = np.average(avg_inner_prod_list)
+    # Add bias
+    inner_prod_list = [inner_prod - average_similarity - b for i, inner_prod in enumerate(inner_prod_list)]
     # Add non-linearity
-    flatten_inner_prod = np.exp(flatten_inner_prod * a)
-    # Apply weights
-    flatten_inner_prod = flatten_inner_prod.T * np.array(vector_store.weights)[item_indices]
-    flatten_inner_prod = np.sum(flatten_inner_prod, axis=0)
-    # Sum by node
-    summed_similarities = np.zeros(len(items_to_search))
-    for i in range(len(items_to_search)):
-        vec_index_tuple = vector_store.items_to_index[items_to_search[i]]
-        n_vecs = vec_index_tuple[1] - vec_index_tuple[0]
-        summed_similarities[i] = np.sum(
-            flatten_inner_prod[vec_index_tuple[0]:vec_index_tuple[1]]) / (n_vecs ** 0.5)
-    return summed_similarities
+    inner_prod_list = [np.exp(inner_prod * a) for inner_prod in inner_prod_list]
+    # get max inner product
+    scores = [np.max(inner_prod) for inner_prod in inner_prod_list]
+    return np.array(scores)
 
 
 
@@ -175,8 +142,7 @@ def get_vector_store(items: List, get_srcs: Callable[[str], List[str]]) -> Vecto
         srcs = get_srcs(item)
         src_list.extend(srcs)
         item_list.extend([item] * len(srcs))
-    embeddings = get_embeddings(src_list)
-    vector_store.add_vecs(embeddings, item_list)
+        vector_store.add_item(item, srcs)
     return vector_store
 
 
