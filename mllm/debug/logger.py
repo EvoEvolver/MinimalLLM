@@ -10,38 +10,32 @@ class Logger:
     """
     active_loggers: List[Logger] = []
 
-    def __init__(self, file_path_scope: str | List[str] | None = None):
+    def __init__(self, disable=False):
         self.log_list = []
         # the path of the file that calls this function
         self.caller_list = []
-        self.file_path_scope = set()
-        if file_path_scope is not None:
-            if isinstance(file_path_scope, str):
-                self.file_path_scope.add(file_path_scope)
-            else:
-                self.file_path_scope.update(file_path_scope)
-            self.no_file_filter = False
-        else:
-            self.no_file_filter = True
-        self.__class__.active_loggers = []
+        self.disable = True if disable != False else False
 
     def add_log(self, log: any, stack_depth=0):
-        caller_path = inspect.stack()[stack_depth+1].filename
-        if self.no_file_filter or caller_path in self.file_path_scope:
-            self.caller_list.append(caller_path)
-            self.log_list.append(log)
+        caller_path = inspect.stack()[stack_depth + 1].filename
+        self.caller_list.append(caller_path)
+        self.log_list.append(log)
 
     @classmethod
     def add_log_to_all(cls, log: any, stack_depth=0):
         for logger in cls.active_loggers:
-            logger.add_log(log, stack_depth+1)
+            logger.add_log(log, stack_depth + 1)
 
     def __enter__(self):
+        if self.disable:
+            return self
         # Add self to active_loggers
         self.__class__.active_loggers.append(self)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.disable:
+            return self
         self.__class__.active_loggers.remove(self)
         self.display_log()
 
