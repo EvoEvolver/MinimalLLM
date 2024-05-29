@@ -30,11 +30,6 @@ print(embeddings)
 # Embeddings are automatically cached
 ```
 
-Switch provider
-```python
-from mllm.provider_switch import set_default_to_anthropic
-set_default_to_anthropic()
-```
 
 Visualized Log of chats
 ```python
@@ -44,6 +39,27 @@ with display_chats():
     chat += "Who is your developer?"
     res = chat.complete(cache=True)
     # A web page will be opened to show the chat log
+```
+
+
+## Providers
+
+MinimalLLM is based on LiteLLM, which supports multiple providers. You can switch the provider to use different LLMs.
+
+Switch provider
+```python
+from mllm.provider_switch import set_default_to_anthropic
+set_default_to_anthropic()
+```
+
+To setup the API keys for the providers, we recommend to use the following wizard:
+```python
+from mllm.setup.wizard import setup_wizard
+setup_wizard()
+```
+You can run in the command line:
+```bash
+python -m mllm.setup.wizard
 ```
 
 ## Installation
