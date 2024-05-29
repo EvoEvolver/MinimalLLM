@@ -204,7 +204,7 @@ class Chat:
         :param model: The name of the model to use. If None, the default model will be used.
         :param cache: Whether to use cache. If True, the result will be cached.
         :param expensive: Whether to use the expensive model. If True, the default expensive model will be used.
-        :param parse: How to parse the result. Options: "dict", "list", "obj", "quotes", "colon"
+        :param parse: How to parse the result. Options: "dict", "list", "obj", "quotes", "colon". See http://mllm.evoevo.org/parsing for details.
         :param retry: Whether to retry if the completion fails.
         :param options: Additional options for the completion model.
         :return: The completion result from the model. If parse is set, a parsed result will be returned.
