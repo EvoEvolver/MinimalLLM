@@ -57,10 +57,17 @@ class ChatLogger(Logger):
         show_json_table(info_list)
 
 
+class ParseError(Exception):
+    pass
+
+
 def parse_res(parse, res):
     if parse not in ["dict", "list", "obj", "quotes", "colon"]:
         raise ValueError("Invalid parse type")
-    res = Parse.__dict__[parse](res)
+    try:
+        res = Parse.__dict__[parse](res)
+    except Exception as e:
+        raise ParseError(f"Failed to parse the result: {e}")
     return res
 
 
@@ -225,7 +232,8 @@ class Chat:
                 if parse is not None:
                     res = parse_res(parse, res)
                 return res
-            except Exception as e:
+            # Retry if the completion fails on TimeoutError or ParseError
+            except (TimeoutError, ParseError) as e:
                 if not retry:
                     raise e
                 # Disable cache for retry
@@ -235,7 +243,7 @@ class Chat:
                 import traceback
                 print(traceback.format_exc())
                 print("Retrying...")
-        raise Exception("Failed to complete chat")
+        raise Exception("Failed to complete chat. Did you set the correct API key? Did you prompt the model to output the expected parsing format?")
 
     def _complete_chat_impl(self, model: str, use_cache: bool, options):
         messages = self.get_messages_to_api()
