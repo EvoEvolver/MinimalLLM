@@ -12,6 +12,14 @@ def test_image_display():
                 "EvoLogoOrg.png")
             res = chat.complete(cache=True)
 
+def test_chat_with_html_tags():
+    with display_chats():
+        chat = Chat()
+        chat = Chat()
+        chat.add_user_message("<input>What is your name?</input>")
+        res1 = chat.complete()
+
+
 def test_cached_display():
     with caching.refresh_cache():
         chat = Chat()

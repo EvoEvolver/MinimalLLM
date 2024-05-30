@@ -26,18 +26,17 @@ def get_chat_in_html(chat: Chat):
     message_to_api = chat.get_messages_to_api()
     for entry in message_to_api:
         if isinstance(entry["content"], str):
-            content = entry["content"]
-        else:
-            content = []
-            for item in entry["content"]:
-                if item["type"] == "text":
-                    text = item["text"]
-                    text = html.escape(text)
-                    text = text.replace("\n", "<br/>")
-                    content.append(text)
-                elif item["type"] == "image_url":
-                    content.append("<image src='{}' style='max-height: 200px;'/>".format(item["image_url"]["url"]))
-            content = "<br/>".join(content)
+            entry["content"] = [{"type": "text", "text": entry["content"]}]
+        content = []
+        for item in entry["content"]:
+            if item["type"] == "text":
+                text = item["text"]
+                text = html.escape(text)
+                text = text.replace("\n", "<br/>")
+                content.append(text)
+            elif item["type"] == "image_url":
+                content.append("<image src='{}' style='max-height: 200px;'/>".format(item["image_url"]["url"]))
+        content = "<br/>".join(content)
         res.append(f"------{entry['role']}------<br/> {content}")
     return "<br/>".join(res)
 
