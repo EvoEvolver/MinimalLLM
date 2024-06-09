@@ -12,7 +12,7 @@ from litellm import completion
 from mllm.cache.cache_service import caching
 from mllm.debug.logger import Logger
 from mllm.config import default_models, default_options
-from mllm.debug.show_table import show_json_table
+from mllm.debug.display import show_json_table
 from mllm.utils import Parse
 
 n_chat_retry = 3

@@ -6,10 +6,38 @@ import sys
 import time
 from typing import List
 
+
 from tenacity import retry, stop_after_attempt, wait_fixed, \
     retry_if_exception
 
-from tqdm.autonotebook import tqdm
+"""
+# IPython
+"""
+
+def check_if_in_notebook() -> bool:
+    try:
+        from IPython import get_ipython
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False
+
+is_in_notebook = check_if_in_notebook()
+
+if is_in_notebook:
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
+
+
+"""
+# Parse
+"""
 
 
 class Parse:
@@ -198,7 +226,6 @@ def test_standard_multi_attempts():
     def a():
         print("a")
         raise ValueError("a")
-
     a()
 
 class EmptyContext:
@@ -206,3 +233,4 @@ class EmptyContext:
         pass
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
+

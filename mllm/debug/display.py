@@ -1,11 +1,33 @@
-import os
 import webbrowser
 from json2html import json2html
 import tempfile
 
+from mllm.utils import is_in_notebook
+
+display_config = {
+    'show_in_notebook': True,
+}
+
+def show_html(html: str):
+    if is_in_notebook and display_config['show_in_notebook']:
+        show_html_in_notebook(html)
+    else:
+        show_html_in_browser(html)
+
+def show_html_in_browser(html: str):
+    with tempfile.NamedTemporaryFile('w', delete=False, suffix='.html') as file:
+        file.write(html)
+        filename = 'file:///' + file.name
+    webbrowser.open_new_tab(filename)
+
+def show_html_in_notebook(html: str):
+    from IPython.display import display, HTML
+    display(HTML(html))
+
+
 def show_json_table(json_list):
     """
-    Show a json data as a table in browser
+    Show a json data as a table in browser or notebook
     :param json_list: The json data to show
     :return:
     """
@@ -42,10 +64,7 @@ def show_json_table(json_list):
 </body> 
 </html>
 """
-    with tempfile.NamedTemporaryFile('w', delete=False, suffix='.html') as file:
-        file.write(html)
-        filename = 'file:///' + file.name
-    webbrowser.open_new_tab(filename)
+    show_html(html)
 
 
 if __name__ == '__main__':
