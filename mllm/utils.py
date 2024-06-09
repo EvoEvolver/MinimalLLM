@@ -4,11 +4,12 @@ import json
 import os
 import sys
 import time
-from typing import List, Any
+from typing import List
 
 from tenacity import retry, stop_after_attempt, wait_fixed, \
-    retry_if_exception, stop_after_delay
-from tqdm import tqdm
+    retry_if_exception
+
+from tqdm.autonotebook import tqdm
 
 
 class Parse:
@@ -94,7 +95,7 @@ default_parallel_map_config = {
     "n_workers": 8
 }
 
-def parallel_map(func, *args, n_workers=None):
+def parallel_map(func, *args, n_workers=None, title=None):
     """
     Example usage: `for i, res in parallel_map(lambda x: x + 1, [1, 2, 3, 4, 5], n_workers=4): do_something`
     :param func: The function to apply on each element of args
@@ -110,10 +111,11 @@ def parallel_map(func, *args, n_workers=None):
 
     arg_lists = [list(arg) for arg in args]
     start_time = time.time()
+    title = title or func.__name__
     with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
         results = []
         for result in tqdm(executor.map(func, *arg_lists, timeout=None), total=len(arg_lists[0]),
-                           desc=func.__name__):
+                           desc=title):
             results.append(result)
             time_now = time.time()
             if time_now - start_time > 5:
