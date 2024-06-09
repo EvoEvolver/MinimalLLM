@@ -6,7 +6,7 @@ import atexit
 
 from mllm.cache.cache_embedding import CacheTableEmbed
 from mllm.cache.cache_kv import CacheTableKV
-from mllm.utils import get_main_path, standard_multi_attempts, EmptyContext
+from mllm.utils import get_main_path
 
 
 def get_cache_path(main_path: str):
@@ -46,25 +46,21 @@ class CacheService:
         main_path = os.path.abspath(module.__file__)
         self._load_cache_on_path(main_path)
 
-    def refresh_cache(self, disable=None):
+    def refresh_cache(self, disable=False):
         """
         Usage: with caching.refresh_cache():
                 your codes
-        :return:
+        :return: a context manager that refreshes the cache
         """
-        if disable is not None:
-            return EmptyContext()
-        return RefreshCacheContext(self.cache_kv)
+        return RefreshCacheContext(self.cache_kv, disable=disable)
 
-    def disable_cache(self, disable=None):
+    def disable_cache(self, disable=False):
         """
         Usage: with caching.disable_cache():
                 your codes
         :return:
         """
-        if disable is not None:
-            return EmptyContext()
-        return DisableCacheContext(self.cache_kv)
+        return DisableCacheContext(self.cache_kv, disable=disable)
 
     def _load_cache_on_path(self, main_path):
         cache_path = get_cache_path(main_path)
@@ -82,8 +78,9 @@ class CacheService:
             self.cache_embed = CacheTableEmbed(cache_dir)
             self.cache_embed_other[cache_dir] = self.cache_embed
 
+
 class RefreshCacheContext:
-    def __init__(self, cache_kv: CacheTableKV, cache_type: str = ""):
+    def __init__(self, cache_kv: CacheTableKV, cache_type: str = "", disable=False):
         """
         :param cache_type: The type of cache to refresh. If type is "", then all cache will be
         refreshed
@@ -91,8 +88,11 @@ class RefreshCacheContext:
         self.cache_type = cache_type
         self.cache_kv = cache_kv
         self.already_refreshed = False
+        self.disable = True if disable != False else False
 
     def __enter__(self):
+        if self.disable:
+            return
         if self.cache_type != "":
             if self.cache_type not in self.cache_kv.types_to_refresh:
                 self.cache_kv.types_to_refresh.add(self.cache_type)
@@ -105,6 +105,8 @@ class RefreshCacheContext:
                 self.cache_kv.refresh_all = True
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.disable:
+            return
         if self.cache_type != "":
             if not self.already_refreshed:
                 self.cache_kv.types_to_refresh.remove(self.cache_type)
@@ -113,12 +115,20 @@ class RefreshCacheContext:
                 self.cache_kv.refresh_all = False
         self.cache_kv.apply_cache_update()
 
+
 class DisableCacheContext:
-    def __init__(self, cache_kv: CacheTableKV):
-        self.cache_kv:CacheTableKV = cache_kv
+    def __init__(self, cache_kv: CacheTableKV, disable=False):
+        self.cache_kv: CacheTableKV = cache_kv
+        self.disable = True if disable != False else False
+
     def __enter__(self):
+        if self.disable:
+            return
         self.cache_kv.inactive = True
+
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.disable:
+            return
         self.cache_kv.inactive = False
 
 

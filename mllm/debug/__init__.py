@@ -1,4 +1,4 @@
-from mllm.utils import debugger_is_active, EmptyContext
+from mllm.utils import debugger_is_active
 
 is_debug = debugger_is_active()
 
