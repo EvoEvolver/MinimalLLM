@@ -33,6 +33,7 @@ def get_chat_in_html(chat: Chat):
                 text = item["text"]
                 text = html.escape(text)
                 text = text.replace("\n", "<br/>")
+                text = text.replace(" ", "&nbsp;")
                 content.append(text)
             elif item["type"] == "image_url":
                 content.append("<image src='{}' style='max-height: 200px;'/>".format(item["image_url"]["url"]))
