@@ -1,5 +1,5 @@
 from mllm import Chat
-from mllm.utils import Parse
+from mllm.utils.parser import Parse
 
 def test_parse_quotes():
     src = """

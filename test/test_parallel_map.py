@@ -1,4 +1,4 @@
-from mllm.utils import parallel_map
+from mllm.utils.maps import parallel_map
 import time
 def test_parallel_map():
     def wait_for_1_second(x):

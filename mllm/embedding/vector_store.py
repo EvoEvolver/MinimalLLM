@@ -2,9 +2,9 @@ from typing import List, Callable
 
 import numpy as np
 
-from mllm.debug.display import show_json_table
+from mllm.display.show_html import show_json_table
 from mllm.embedding.get import get_embeddings
-from mllm.debug.logger import Logger
+from mllm.utils.logger import Logger
 
 
 class EmbedSearchLogger(Logger):

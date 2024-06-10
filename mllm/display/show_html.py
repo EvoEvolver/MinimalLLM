@@ -2,7 +2,7 @@ import webbrowser
 from json2html import json2html
 import tempfile
 
-from mllm.utils import is_in_notebook
+from mllm.utils.ipython import is_in_notebook
 
 display_config = {
     'show_in_notebook': True,

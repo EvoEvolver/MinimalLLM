@@ -3,10 +3,13 @@ from __future__ import annotations
 import inspect
 import os
 import atexit
+import sys
 
 from mllm.cache.cache_embedding import CacheTableEmbed
 from mllm.cache.cache_kv import CacheTableKV
-from mllm.utils import get_main_path
+
+def get_main_path():
+    return os.path.abspath(sys.argv[0])
 
 
 def get_cache_path(main_path: str):

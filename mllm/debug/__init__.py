@@ -1,6 +1,4 @@
-from mllm.utils import debugger_is_active
-
-is_debug = debugger_is_active()
+from mllm.cache.cache_service import caching
 
 def display_chats(disable=False):
     from mllm.chat import ChatLogger
@@ -10,3 +8,7 @@ def display_chats(disable=False):
 def display_embed_search(disable=False):
     from mllm.embedding.vector_store import EmbedSearchLogger
     return EmbedSearchLogger(disable)
+
+
+def refresh_cache(disable=False):
+    return caching.refresh_cache(disable)
