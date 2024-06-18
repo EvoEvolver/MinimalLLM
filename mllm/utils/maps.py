@@ -36,7 +36,10 @@ def parallel_map(func, *args, n_workers=None, title=None):
 
     arg_lists = [list(arg) for arg in args]
     start_time = time.time()
-    title = title or func.__name__
+    title = title
+    if title is None:
+        if hasattr(func, "__name__"):
+            title = func.__name__
     with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
         results = []
         for result in tqdm(executor.map(func, *arg_lists, timeout=None), total=len(arg_lists[0]),
