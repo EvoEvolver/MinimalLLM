@@ -10,3 +10,5 @@ def test_cached_chat():
     num_1 = get_random_number()
     num_2 = get_random_number()
     assert num_1 == num_2
+
+## See all test_image_chat_cache in test_image.py
