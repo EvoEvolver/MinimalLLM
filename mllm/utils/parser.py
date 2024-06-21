@@ -23,11 +23,14 @@ class Parse:
         end = src.rfind("}")
         if start == -1 or end == -1:
             raise ValueError(f"Invalid json: {src}")
+        json_src = src[start:end + 1]
         try:
-            # res = ast.literal_eval(src[start:end + 1])
-            res = json.loads(src[start:end + 1])
+            res = json.loads(json_src)
         except:
-            raise ValueError(f"Invalid json: {src}")
+            try:
+                res = ast.literal_eval(json_src)
+            except:
+                raise ValueError(f"Invalid json/dict: {src}")
         return res
 
     @staticmethod
