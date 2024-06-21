@@ -19,4 +19,7 @@ def check_if_in_notebook() -> bool:
     except NameError:
         return False
 
-is_in_notebook = check_if_in_notebook()
+try:
+    is_in_notebook = check_if_in_notebook()
+except Exception as e:
+    is_in_notebook = False
