@@ -53,6 +53,33 @@ def parallel_map(func, *args, n_workers=None, title=None):
     return enumerate(results)
 
 
+def p_map(func, args, n_workers=None, title=None):
+    from mllm.cache.cache_service import caching
+    if n_workers is None:
+        n_workers = default_parallel_map_config["n_workers"]
+    if not isinstance(args, list):
+        args = list(args)
+    if len(args) == 0:
+        return None, None
+    start_time = time.time()
+    title = title
+    if title is None:
+        if hasattr(func, "__name__"):
+            title = func.__name__
+    with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
+        results = []
+        for result in tqdm(executor.map(func, args, timeout=None), total=len(args),
+                           desc=title):
+            results.append(result)
+            time_now = time.time()
+            if time_now - start_time > 5:
+                caching.save()
+                start_time = time_now
+    caching.save()
+    return zip(args, results)
+
+
+
 """
 # Nested map
 """
