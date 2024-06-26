@@ -27,3 +27,15 @@ def test_system_message():
     chat += "Are you a human?"
     res = chat.complete()
     print(res)
+
+def test_auto_dedent():
+    chat = Chat()
+    chat += """
+    Explain the following code
+    ```python
+    def greet():
+        print("Hello")
+    greet()
+    ```"""
+    message = chat.messages[0]["content"]["text"]
+    assert message == "Explain the following code\n```python\ndef greet():\n    print(\"Hello\")\ngreet()\n```"

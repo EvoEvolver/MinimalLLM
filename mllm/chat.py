@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import copy
 import html
+import textwrap
 from io import BytesIO
 
 import httpx
@@ -76,11 +77,18 @@ class Chat:
     Class for chat completion
     """
 
-    def __init__(self, user_message=None, system_message: any = None):
+    def __init__(self, user_message=None, system_message: any = None, dedent=True):
+        """
+        Create a new chat session. You can get the completion result by calling the `complete` method.
+        :param user_message: the first message from the user
+        :param system_message: the system message
+        :param dedent: whether to dedent the user message automatically
+        """
         self.messages = []
         self.system_message = system_message
         if user_message is not None:
             self._add_message(user_message, "user")
+        self.dedent = dedent
 
     """
     ## Message editing and output
@@ -107,6 +115,8 @@ class Chat:
         })
 
     def add_user_message(self, content: any):
+        if self.dedent:
+            content = textwrap.dedent(content).strip()
         self._add_message(content, "user")
 
     def add_image_message(self, image_or_image_path: str | Image, more: dict = None):
