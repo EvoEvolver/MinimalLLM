@@ -196,7 +196,7 @@ class Chat:
                     merge_failed = True
                     break
             if not merge_failed:
-                message["content"] = "\n\n".join(content_list)
+                message["content"] = "\n".join(content_list)
 
         return messages
 

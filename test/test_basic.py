@@ -37,5 +37,12 @@ def test_auto_dedent():
         print("Hello")
     greet()
     ```"""
-    message = chat.messages[0]["content"]["text"]
-    assert message == "Explain the following code\n```python\ndef greet():\n    print(\"Hello\")\ngreet()\n```"
+    chat += "What is the output?"
+    message = chat.get_messages_to_api()
+    assert message[0]["content"] == """Explain the following code
+```python
+def greet():
+    print("Hello")
+greet()
+```
+What is the output?"""
