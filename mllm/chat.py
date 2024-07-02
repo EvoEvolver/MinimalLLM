@@ -8,7 +8,7 @@ from io import BytesIO
 
 import httpx
 from PIL.Image import Image
-from litellm import completion
+from litellm import completion, get_llm_provider
 
 from mllm.cache.cache_service import caching
 from mllm.utils.logger import Logger
@@ -236,6 +236,11 @@ class Chat:
                 model = default_models["expensive"]
             if self.contains_image():
                 model = default_models["vision"]
+
+        if get_llm_provider(model)[1] in ["openai", "anthropic"]:
+            if parse == "dict":
+                options["response_format"] = { "type": "json_object" }
+
         for n_tries in range(n_chat_retry):
             try:
                 res = self._complete_chat_impl(model, cache, options)

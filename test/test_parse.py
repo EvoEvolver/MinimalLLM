@@ -33,5 +33,5 @@ Generate a json dict with keys 'a' and 'b' and values 1 and 2
 """
     chat = Chat()
     chat += prompt
-    res = chat.complete(parse="dict", cache=True)
+    res = chat.complete(parse="dict", cache=False)
     assert res == {"a": 1, "b": 2}
