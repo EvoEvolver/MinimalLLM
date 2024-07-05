@@ -1,5 +1,9 @@
 # MinimalLLM
 
+```bash
+pip install MinimalLLM
+```
+
 Minimal and handy interfaces of LLMs based on LiteLLM.
 
 Features:
