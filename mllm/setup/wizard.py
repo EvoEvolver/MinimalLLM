@@ -1,8 +1,9 @@
 import os
 
-from mllm.setup.inject_env_var import inject_env_var
+from mllm.setup.inject_dotenv import update_env_var
 
-provider_key_dict = {"openai":["OPENAI_API_KEY"], "anthropic":["ANTHROPIC_API_KEY"], "replicate":["REPLICATE_API_KEY"]}
+provider_key_dict = {"openai": ["OPENAI_API_KEY"], "anthropic": ["ANTHROPIC_API_KEY"],
+                     "replicate": ["REPLICATE_API_KEY"], "gemini": ["GEMINI_API_KEY"]}
 
 
 def setup_wizard():
@@ -11,15 +12,13 @@ def setup_wizard():
     print("This wizard will help you set up your environment to use MLLM.")
     print("Please select which provider you would like to use.")
     for i, provider in enumerate(provider_key_dict.keys()):
-        print(f"{i+1}. {provider}")
+        print(f"{i + 1}. {provider}")
     provider_choice = input("Enter the number of the provider you would like to use: ")
     provider_choice = int(provider_choice)
     provider_choice -= 1
     provider = list(provider_key_dict.keys())[provider_choice]
-    # clear the output
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print(f"Great! You have selected {provider} as your provider.")
 
+    print(f"Great! You have selected {provider} as your provider.")
 
     print(f"You have to set the following environment variables to use {provider}:")
     not_set = False
@@ -31,15 +30,16 @@ def setup_wizard():
         else:
             print(f"{env_var} (current: {env_var_value})")
     if not_set:
-        print("Some of the environment variables are not set. Do you want to set them? (y/n)")
+        print(
+            "Some of the environment variables are not set. Do you want to set them? (y/n)")
     else:
         print("All environment variables are set. Do you want to change them? (y/n)")
     choice = input()
     if choice == "y":
         for env_var in provider_key_dict[provider]:
             env_var_value = input(f"Enter the value for {env_var}: ")
-            inject_env_var(env_var, env_var_value)
-            os.environ[env_var] = env_var_value
+            update_env_var(env_var, env_var_value, verbose=True)
+            assert os.environ[env_var] == env_var_value
         print("Environment variables set!")
     else:
         print("Environment variables not set.")
@@ -48,8 +48,6 @@ def setup_wizard():
     for env_var in provider_key_dict[provider]:
         print(f"{env_var}: {os.environ.get(env_var)}")
 
-    if choice == "y":
-        print("Please restart your terminal (IDE) to apply the changes.")
 
 if __name__ == '__main__':
     setup_wizard()

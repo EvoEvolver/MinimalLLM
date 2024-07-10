@@ -15,3 +15,11 @@ def test_image_chat_cache():
     chat.add_image_message("EvoLogoOrg.png")
     res = chat.complete(cache=True)
     print(res)
+
+def test_image_chat_dict():
+    chat = Chat()
+    chat.add_user_message("What is in this image? Answer in JSON")
+    chat.add_image_message(
+        "EvoLogoOrg.png")
+    res = chat.complete(parse="dict", model="gpt-4o")
+    print(res)
