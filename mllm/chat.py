@@ -69,7 +69,7 @@ def parse_res(parse, res):
     if parse not in ["dict", "list", "obj", "quotes", "colon"]:
         raise ValueError("Invalid parse type")
     try:
-        res = Parse.__dict__[parse](res)
+        res = Parse.__dict__[parse].__func__(res)
     except Exception as e:
         raise ParseError(f"Failed to parse the result: {e}")
     return res
