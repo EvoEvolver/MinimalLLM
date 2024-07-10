@@ -1,11 +1,11 @@
 from mllm.config import default_models
 from mllm.env_utils import check_replicate_env, check_anthropic_env, check_openai_env
 
-def set_default_to_google():
-    default_models["normal"] = "gemini-1.0-pro"
-    default_models["expensive"] = "gemini-1.0-pro"
-    default_models["vision"] = "gemini-1.0-pro-vision"
-    default_models["embedding"] = "vertex_ai/textembedding-gecko"
+def set_default_to_gemini():
+    default_models["normal"] = "gemini/gemini-pro"
+    default_models["expensive"] = "gemini/gemini-1.5-pro-latest"
+    default_models["vision"] = "gemini/gemini-pro-vision"
+    default_models["embedding"] = "text-embedding-3-large"
 
 def set_default_to_openai(use_gpt_4=False):
     check_openai_env()
