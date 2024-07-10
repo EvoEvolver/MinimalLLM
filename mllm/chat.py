@@ -18,6 +18,7 @@ from mllm.utils.parser import Parse
 
 n_chat_retry = 3
 
+
 def encode_image(image_file: BytesIO):
     return base64.b64encode(image_file.read()).decode('utf-8')
 
@@ -37,10 +38,12 @@ def get_chat_in_html(chat: Chat):
                 text = text.replace(" ", "&nbsp;")
                 content.append(text)
             elif item["type"] == "image_url":
-                content.append("<image src='{}' style='max-height: 200px;'/>".format(item["image_url"]["url"]))
+                content.append("<image src='{}' style='max-height: 200px;'/>".format(
+                    item["image_url"]["url"]))
         content = "<br/>".join(content)
         res.append(f"------{entry['role']}------<br/> {content}")
     return "<br/>".join(res)
+
 
 class ChatLogger(Logger):
     active_loggers = []
@@ -216,7 +219,8 @@ class Chat:
     ## Chat completion functions
     """
 
-    def complete(self, model=None, cache=False, expensive=False, parse=None, retry=True, options=None):
+    def complete(self, model=None, cache=False, expensive=False, parse=None, retry=True,
+                 options=None):
         """
         :param model: The name of the model to use. If None, the default model will be used.
         :param cache: Whether to use cache. If True, the result will be cached.
@@ -229,17 +233,20 @@ class Chat:
         if options is None:
             options = {}
         options = {**default_options, **options}
+
+        contains_image = self.contains_image()
         if model is None:
             if not expensive:
                 model = default_models["normal"]
             else:
                 model = default_models["expensive"]
-            if self.contains_image():
+            if contains_image:
                 model = default_models["vision"]
 
         if get_llm_provider(model)[1] in ["openai", "anthropic"]:
             if parse == "dict":
-                options["response_format"] = { "type": "json_object" }
+                if not contains_image or model == "gpt-4o":
+                    options["response_format"] = {"type": "json_object"}
 
         for n_tries in range(n_chat_retry):
             try:
@@ -258,7 +265,8 @@ class Chat:
                 import traceback
                 print(traceback.format_exc())
                 print("Retrying...")
-        raise Exception("Failed to complete chat. Did you set the correct API key? Did you prompt the model to output the expected parsing format?")
+        raise Exception(
+            "Failed to complete chat. Did you set the correct API key? Did you prompt the model to output the expected parsing format?")
 
     def _complete_chat_impl(self, model: str, use_cache: bool, options):
         messages = self.get_messages_to_api()
