@@ -12,14 +12,9 @@ def test_chat():
     chat = Chat()
     chat.add_user_message("Who is your developer?")
     res = chat.complete()
-    print(res)
-
-
-def test_chat_plus():
-    chat = Chat()
-    chat += "Who is your developer?"
+    chat += "Can you give more information about it?"
     res = chat.complete()
-    print(res)
+    print(chat)
 
 
 def test_system_message():

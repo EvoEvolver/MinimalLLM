@@ -11,6 +11,7 @@ from PIL.Image import Image
 from litellm import completion, get_llm_provider
 
 from mllm.cache.cache_service import caching
+from mllm.special_models import get_special_model_handler
 from mllm.utils.logger import Logger
 from mllm.config import default_models, default_options
 from mllm.display.show_html import show_json_table
@@ -279,7 +280,11 @@ class Chat:
 
         options = options or {}
 
-        res = completion(model, messages=messages, **options).choices[0].message.content
+        special_handler = get_special_model_handler(model)
+        if special_handler is None:
+            res = completion(model, messages=messages, **options).choices[0].message.content
+        else:
+            res = special_handler(messages, options)
 
         self.add_assistant_message(res)
 
@@ -311,7 +316,7 @@ class Chat:
         return "\n".join(res)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}> {self.system_message!r}"
+        return f"Chat({self.get_messages_to_api()})"
 
     def __copy__(self):
         new_chat = Chat(system_message=self.system_message)
