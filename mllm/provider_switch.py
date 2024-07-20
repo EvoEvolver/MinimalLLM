@@ -4,14 +4,14 @@ from mllm.env_utils import check_replicate_env, check_anthropic_env, check_opena
 def set_default_to_gemini():
     default_models["normal"] = "gemini/gemini-pro"
     default_models["expensive"] = "gemini/gemini-1.5-pro-latest"
-    default_models["vision"] = "gemini/gemini-pro-vision"
+    default_models["vision"] = "gemini/gemini-1.5-pro-latest"
     default_models["embedding"] = "text-embedding-3-large"
 
 def set_default_to_openai(use_gpt_4=False):
     check_openai_env()
-    default_models["normal"] = "gpt-3.5-turbo"
-    default_models["expensive"] = "gpt-4-turbo-preview" if not use_gpt_4 else "gpt-4"
-    default_models["vision"] = "gpt-4-vision-preview"
+    default_models["normal"] = "gpt-4o-mini"
+    default_models["expensive"] = "gpt-4-turbo" if not use_gpt_4 else "gpt-4"
+    default_models["vision"] = "gpt-4-vision"
     default_models["embedding"] = "text-embedding-3-large"
 
 def set_default_to_anthropic(expensive_vision_model=False):
@@ -23,7 +23,7 @@ def set_default_to_anthropic(expensive_vision_model=False):
 
 def set_default_to_llama():
     check_replicate_env()
-    default_models["normal"] = "replicate/meta/llama-2-13b-chat"
-    default_models["expensive"] = "replicate/meta/llama-2-70b-chat"
-    default_models["vision"] = "gpt-4-vision-preview"
+    default_models["normal"] = "replicate/meta/meta-llama-3-70b-instruct"
+    default_models["expensive"] = "replicate/meta/meta-llama-3-70b-instruct"
+    default_models["vision"] = "replicate/yorickvp/llava-v1.6-34b"
     default_models["embedding"] = "text-embedding-3-large"
