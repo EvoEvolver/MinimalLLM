@@ -1,8 +1,10 @@
 import os
 
+from litellm import completion
+
 
 def get_llava_response(messages, options, model_name):
-    image, prompt = extract_prompt_and_image(messages)
+    prompt, image = extract_prompt_and_image(messages)
     try:
         import replicate
     except ImportError:
@@ -29,20 +31,37 @@ def get_llava_response(messages, options, model_name):
     return res
 
 
+def get_llama_response(messages, options, model_name):
+    prompt, image = extract_prompt_and_image(messages)
+    new_messages = [
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
+    res = completion(model_name, messages=new_messages, **options).choices[0].message.content
+    return res
+
 def extract_prompt_and_image(messages):
     prompt = []
     image = None
     for message in messages:
         if message["role"] == "user":
-            for item in message["content"]:
-                if item["type"] == "text":
-                    prompt.append(item["text"])
-                elif item["type"] == "image_url":
-                    image = item["image_url"]["url"]
+            content = message["content"]
+            if isinstance(content, str):
+                prompt.append(content)
+            else:
+                for item in content:
+                    if item["type"] == "text":
+                        prompt.append(item["text"])
+                    elif item["type"] == "image_url":
+                        image = item["image_url"]["url"]
         elif message["role"] == "system":
             prompt.append("<system>" + message["content"] + "</system>")
+        elif message["role"] == "assistant":
+            prompt.append("<assistant>" + message["content"] + "</assistant>")
     prompt = "\n".join(prompt)
-    return image, prompt
+    return prompt, image
 
 
 special_models = {
@@ -50,10 +69,13 @@ special_models = {
 }
 
 def get_special_model_handler(model_name):
-    handler = special_models.get(model_name, None)
-    if handler is not None:
-        return lambda messages, options: handler(messages, options, model_name)
-    return None
+    if not model_name.startswith("replicate/"):
+        return None
+    if "yorickvp/llava" in model_name:
+        return lambda messages, options: get_llava_response(messages, options, model_name)
+    if "llama" in model_name:
+        return lambda messages, options: get_llama_response(messages, options, model_name)
+
 
 
 

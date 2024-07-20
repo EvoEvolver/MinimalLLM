@@ -34,7 +34,7 @@ def run_chat():
     print(res)
 
 def run_image_chat():
-    chat = Chat()
+    chat = Chat(system_message="You are an assistant")
     chat += "What is in this image?"
     chat.add_image_message("EvoLogoOrg.png")
     res = chat.complete(cache=False)
