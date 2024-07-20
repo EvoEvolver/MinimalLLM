@@ -1,3 +1,4 @@
+import os
 
 
 def get_llava_response(messages, options, model_name):
@@ -6,6 +7,10 @@ def get_llava_response(messages, options, model_name):
         import replicate
     except ImportError:
         raise ImportError("Please install the `replicate` package to use the llava model")
+    if os.environ["REPLICATE_API_TOKEN"] is None:
+        if os.environ["REPLICATE_API_KEY"] is None:
+            raise ValueError("Please set the REPLICATE_API_KEY environment variable")
+        os.environ["REPLICATE_API_TOKEN"] = os.environ["REPLICATE_API_KEY"]
     model_name = model_name.split("/")[1:]
     model_name = "/".join(model_name)
     output = replicate.run(
