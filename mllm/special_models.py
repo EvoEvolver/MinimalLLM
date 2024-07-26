@@ -67,10 +67,9 @@ def extract_prompt_and_image(messages):
                         prompt.append(item["text"])
                     elif item["type"] == "image_url":
                         image = item["image_url"]["url"]
-        elif message["role"] == "system":
-            prompt.append("<system>" + message["content"] + "</system>")
-        elif message["role"] == "assistant":
-            prompt.append("<assistant>" + message["content"] + "</assistant>")
+        else:
+            content = message["content"] if isinstance(message["content"], str) else message["content"]["text"]
+            prompt.append(f"<{message['role']}>" + content + f"<{message['role']}>")
     prompt = "\n".join(prompt)
     return prompt, image
 
