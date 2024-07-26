@@ -54,6 +54,7 @@ def get_llama_response(messages, options, model_name):
 
 
 def extract_prompt_and_image(messages):
+
     prompt = []
     image = None
     for message in messages:
@@ -68,8 +69,17 @@ def extract_prompt_and_image(messages):
                     elif item["type"] == "image_url":
                         image = item["image_url"]["url"]
         else:
-            content = message["content"] if isinstance(message["content"], str) else message["content"]["text"]
-            prompt.append(f"<{message['role']}>" + content + f"<{message['role']}>")
+            if isinstance(message["content"], str):
+                prompt.append(f"<{message['role']}>" + message['content'] + f"<{message['role']}>")
+            elif isinstance(message["content"], dict):
+                prompt.append(f"<{message['role']}>" + message["content"]["text"] + f"<{message['role']}>")
+            elif isinstance(message["content"], list):
+                for item in message["content"]:
+                    if item["type"] == "text":
+                        prompt.append(f"<{message['role']}>" + item["text"] + f"<{message['role']}>")
+                    elif item["type"] == "image_url":
+                        raise ValueError("Image URL not supported in assistant or system prompts.")
+
     prompt = "\n".join(prompt)
     return prompt, image
 
