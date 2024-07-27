@@ -35,7 +35,7 @@ def get_llama_response(messages, options, model_name):
     try:
         import replicate
     except ImportError:
-        raise ImportError("Please install the `replicate` package to use the llava model")
+        raise ImportError("Please install the `replicate` package to use the llama model")
     model_name = model_name.split("/")[1:]
     model_name = "/".join(model_name)
     prompt, image = extract_prompt_and_image(messages)

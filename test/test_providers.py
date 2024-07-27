@@ -27,9 +27,11 @@ def test_image_llava():
     run_image_chat()
 
 def run_chat():
-    chat = Chat()
+    chat = Chat(system_message="You are an assistant who only output JSON")
     chat += "What is your name"
-    chat += "Response by a json"
+    res = chat.complete(parse="dict")
+    print(res)
+    chat += "What is your birthdate"
     res = chat.complete(parse="dict")
     print(res)
 

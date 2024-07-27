@@ -24,9 +24,8 @@ def encode_image(image_file: BytesIO):
     return base64.b64encode(image_file.read()).decode('utf-8')
 
 
-def get_chat_in_html(chat: Chat):
+def get_chat_in_html(message_to_api: list[dict]):
     res = []
-    message_to_api = chat.get_messages_to_api()
     for entry in message_to_api:
         if isinstance(entry["content"], str):
             entry["content"] = [{"type": "text", "text": entry["content"]}]
@@ -50,7 +49,7 @@ class ChatLogger(Logger):
     active_loggers = []
 
     def display_log(self):
-        contents = [get_chat_in_html(chat) for chat in self.log_list]
+        contents = [get_chat_in_html(message_to_api) for message_to_api in self.log_list]
         filenames = [caller_name.split("/")[-1] for caller_name in self.caller_list]
         info_list = []
         for i in range(len(contents)):
@@ -72,7 +71,7 @@ def parse_res(parse, res):
     try:
         res = Parse.__dict__[parse].__func__(res)
     except Exception as e:
-        raise ParseError(f"Failed to parse the result: {e}")
+        raise ParseError(f"Failed to parse the result: {e}\nInput to parse: {res}")
     return res
 
 
@@ -106,6 +105,9 @@ class Chat:
                 "text": content
             }
         })
+
+    def _pop_message(self):
+        return self.messages.pop()
 
     def _add_image_message(self, data: str, media_type: str):
         self.messages.append({
@@ -244,7 +246,7 @@ class Chat:
             if contains_image:
                 model = default_models["vision"]
 
-        if get_llm_provider(model)[1] in ["openai"]:
+        if get_llm_provider(model)[1] in ["openai", "anthropic"]:
             if parse == "dict":
                 if not contains_image or model == "gpt-4o":
                     options["response_format"] = {"type": "json_object"}
@@ -252,9 +254,17 @@ class Chat:
         for n_tries in range(n_chat_retry):
             try:
                 res = self._complete_chat_impl(model, cache, options)
-                if parse is not None:
-                    res = parse_res(parse, res)
-                return res
+                self.add_assistant_message(res)
+                ChatLogger.add_log_to_all(self.get_messages_to_api(), stack_depth=1)
+                try:
+                    if parse is not None:
+                        final_res = parse_res(parse, res)
+                    else:
+                        final_res = res
+                except ParseError as e:
+                    self._pop_message()
+                    raise e
+                return final_res
             # Retry if the completion fails on TimeoutError or ParseError
             except (TimeoutError, ParseError) as e:
                 if not retry:
@@ -274,8 +284,6 @@ class Chat:
         if use_cache:
             cache = caching.cache_kv.read_cache(messages, "chat")
             if cache is not None and cache.is_valid():
-                self.add_assistant_message(cache.value)
-                ChatLogger.add_log_to_all(self, stack_depth=2)
                 return cache.value
 
         options = options or {}
@@ -285,11 +293,6 @@ class Chat:
             res = completion(model, messages=messages, **options).choices[0].message.content
         else:
             res = special_handler(messages, options)
-
-        self.add_assistant_message(res)
-
-        ChatLogger.add_log_to_all(self, stack_depth=2)
-
         if use_cache and cache is not None:
             cache.set_cache(res)
         return res
