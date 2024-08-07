@@ -23,3 +23,13 @@ def test_image_chat_dict():
         "EvoLogoOrg.png")
     res = chat.complete(parse="dict", model="gpt-4o")
     print(res)
+
+def test_two_images():
+    chat = Chat()
+    chat.add_user_message("Compare the following two images. Answer in JSON")
+    chat.add_image_message(
+        "EvoLogoOrg.png")
+    chat.add_image_message(
+        "EvoLogoOrg.png")
+    res = chat.complete(parse="dict", model="gpt-4o")
+    print(res)
