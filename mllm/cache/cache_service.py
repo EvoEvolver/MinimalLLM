@@ -12,23 +12,22 @@ def get_main_path():
     return os.path.abspath(sys.argv[0])
 
 
-def get_cache_path(main_path: str):
+def get_cache_path(main_path: str, postfix=""):
     file_name = os.path.basename(main_path)
     dir_name = os.path.dirname(main_path)
-    return os.path.join(dir_name, ".llm_cache", file_name + ".json")
+    return os.path.join(dir_name, ".llm_cache", file_name + postfix + ".json")
 
 
 class CacheService:
 
-    def __init__(self, base_path=None):
-        if base_path is None:
-            cache_path = get_cache_path(get_main_path())
-        else:
-            cache_path = get_cache_path(base_path)
+    def __init__(self):
+        self.base_path = get_main_path()
+        cache_path = get_cache_path(self.base_path)
         self.cache_kv: CacheTableKV = CacheTableKV(cache_path)
         self.cache_embed: CacheTableEmbed = CacheTableEmbed(os.path.dirname(cache_path))
         self.cache_kv_other = {self.cache_kv.cache_path: self.cache_kv}
         self.cache_embed_other = {self.cache_kv.cache_path: self.cache_embed}
+        self.postfix_stack = []
 
     def save(self):
         self.cache_kv.save_all_cache_to_file()
@@ -41,13 +40,6 @@ class CacheService:
         self.cache_kv.save_all_cache_to_file()
         # TODO: save only used embedding cache
         self.cache_embed.save_cache_table()
-
-    def set_main_here(self):
-        # get the file path of the caller use inspect
-        frame = inspect.stack()[1]
-        module = inspect.getmodule(frame[0])
-        main_path = os.path.abspath(module.__file__)
-        self._load_cache_on_path(main_path)
 
     def refresh_cache(self, disable=False):
         """
@@ -65,8 +57,8 @@ class CacheService:
         """
         return DisableCacheContext(self.cache_kv, disable=disable)
 
-    def _load_cache_on_path(self, main_path):
-        cache_path = get_cache_path(main_path)
+    def _load_cache_on_path(self, postfix: str):
+        cache_path = get_cache_path(self.base_path, postfix)
         cache_dir = os.path.dirname(cache_path)
 
         if cache_path in self.cache_kv_other:
@@ -80,6 +72,34 @@ class CacheService:
         else:
             self.cache_embed = CacheTableEmbed(cache_dir)
             self.cache_embed_other[cache_dir] = self.cache_embed
+
+    def push_postfix(self, postfix):
+        self.postfix_stack.append(postfix)
+        postfix_str = "." + ".".join(self.postfix_stack)
+        self._load_cache_on_path(postfix_str)
+
+    def pop_postfix(self):
+        self.postfix_stack.pop()
+        if len(self.postfix_stack) == 0:
+            postfix_str = ""
+        else:
+            postfix_str = "." + ".".join(self.postfix_stack)
+        self._load_cache_on_path(postfix_str)
+
+    def cache_env(self, postfix):
+        return PostfixContext(self, postfix)
+
+
+class PostfixContext:
+    def __init__(self, cache_service: CacheService, postfix: str):
+        self.cache_service = cache_service
+        self.postfix = postfix
+
+    def __enter__(self):
+        self.cache_service.push_postfix(self.postfix)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cache_service.pop_postfix()
 
 
 class RefreshCacheContext:
