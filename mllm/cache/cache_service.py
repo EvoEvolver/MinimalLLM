@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import inspect
 import os
 import atexit
 import sys
+from typing import List
 
 from mllm.cache.cache_embedding import CacheTableEmbed
 from mllm.cache.cache_kv import CacheTableKV
@@ -12,22 +12,24 @@ def get_main_path():
     return os.path.abspath(sys.argv[0])
 
 
-def get_cache_path(main_path: str, postfix=""):
-    file_name = os.path.basename(main_path)
-    dir_name = os.path.dirname(main_path)
-    return os.path.join(dir_name, ".llm_cache", file_name + postfix + ".json")
+def get_cache_path(main_path: str, postfix):
+    dir_name = main_path
+    assert len(postfix) > 0
+    postfix_str = ".".join(postfix)
+    return os.path.join(dir_name, ".llm_cache", postfix_str + ".json")
 
 
 class CacheService:
 
     def __init__(self):
-        self.base_path = get_main_path()
-        cache_path = get_cache_path(self.base_path)
+        main_path = get_main_path()
+        self.postfix_stack = [os.path.basename(main_path)]
+        self.base_path = os.path.dirname(main_path)
+        cache_path = get_cache_path(self.base_path, self.postfix_stack)
         self.cache_kv: CacheTableKV = CacheTableKV(cache_path)
         self.cache_embed: CacheTableEmbed = CacheTableEmbed(os.path.dirname(cache_path))
         self.cache_kv_other = {self.cache_kv.cache_path: self.cache_kv}
         self.cache_embed_other = {self.cache_kv.cache_path: self.cache_embed}
-        self.postfix_stack = []
 
     def save(self):
         self.cache_kv.save_all_cache_to_file()
@@ -60,7 +62,8 @@ class CacheService:
         """
         return DisableCacheContext(self.cache_kv, disable=disable)
 
-    def _load_cache_on_path(self, postfix: str):
+    def _load_cache_on_path(self, postfix: List[str]):
+        self.cache_kv.apply_cache_update()
         cache_path = get_cache_path(self.base_path, postfix)
         cache_dir = os.path.dirname(cache_path)
 
@@ -78,16 +81,21 @@ class CacheService:
 
     def push_postfix(self, postfix):
         self.postfix_stack.append(postfix)
-        postfix_str = "." + ".".join(self.postfix_stack)
-        self._load_cache_on_path(postfix_str)
+        self._load_cache_on_path(self.postfix_stack)
 
     def pop_postfix(self):
+        assert len(self.postfix_stack) >= 2
         self.postfix_stack.pop()
-        if len(self.postfix_stack) == 0:
-            postfix_str = ""
-        else:
-            postfix_str = "." + ".".join(self.postfix_stack)
-        self._load_cache_on_path(postfix_str)
+        self._load_cache_on_path(self.postfix_stack)
+
+    def set_root_name(self, name: str):
+        self.postfix_stack[0] = name
+        self._load_cache_on_path(self.postfix_stack)
+
+    def set_root_path(self, dir_path: str):
+        self.base_path = dir_path
+        self._load_cache_on_path(self.postfix_stack)
+
 
     def cache_env(self, postfix):
         return PostfixContext(self, postfix)
