@@ -70,7 +70,11 @@ class CacheTableKV:
         #
         self.inactive = False
 
-    def save_all_cache_to_file(self):
+    def save_all_cache_to_file(self, filter_unused_cache=False):
+        if filter_unused_cache:
+            n_remove = self.filter_unused_cache()
+            if n_remove > 0:
+                print(f"Removed {n_remove} unused cache")
         self.apply_cache_update()
         if len(self.cache_table) == 0:
             return

@@ -31,13 +31,16 @@ class CacheService:
 
     def save(self):
         self.cache_kv.save_all_cache_to_file()
+        for cache_kv in self.cache_kv_other.values():
+            cache_kv.save_all_cache_to_file()
         self.cache_embed.save_cache_table()
+        for cache_embed in self.cache_embed_other.values():
+            cache_embed.save_cache_table()
 
     def save_used(self):
-        n_remove = self.cache_kv.filter_unused_cache()
-        if n_remove > 0:
-            print(f"Removed {n_remove} unused cache")
-        self.cache_kv.save_all_cache_to_file()
+        self.cache_kv.save_all_cache_to_file(filter_unused_cache=True)
+        for cache_kv in self.cache_kv_other.values():
+            cache_kv.save_all_cache_to_file(filter_unused_cache=True)
         # TODO: save only used embedding cache
         self.cache_embed.save_cache_table()
 
