@@ -66,8 +66,6 @@ class CacheTableKV:
         #
         self.refresh_all: bool = False
         #
-        self.types_used: Set[str] = set()
-        #
         self.inactive = False
 
     def save_all_cache_to_file(self, filter_unused_cache=False):
@@ -97,7 +95,6 @@ class CacheTableKV:
         if self.inactive:
             return None
         hash = get_hash(input, type)
-        self.types_used.add(type)
         un_hit = hash not in self.cache_table
         if type in self.types_to_refresh or self.refresh_all:
             un_hit = True

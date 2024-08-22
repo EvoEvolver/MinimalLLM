@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import hashlib
 from typing import List, Dict
 
 import numpy as np
 from litellm import embedding
+
+from mllm.cache.cache_embedding import CacheTableEmbed
 from mllm.cache.cache_service import caching
 from mllm.config import default_models
 
@@ -12,11 +13,10 @@ from mllm.config import default_models
 class LazyEmbedding:
     lazy_embeddings: Dict[str, List[LazyEmbedding]] = {}
 
-    def __init__(self, src: str, model: str, hash_key, cache_table):
+    def __init__(self, src: str, model: str, cache_embed: CacheTableEmbed):
         self.src = src
         self.model = model
-        self.hash_key = hash_key
-        self.cache_table = cache_table
+        self.cache_embed: CacheTableEmbed = cache_embed
         self.embedding = None
         if model not in LazyEmbedding.lazy_embeddings:
             LazyEmbedding.lazy_embeddings[model] = [self]
@@ -37,7 +37,7 @@ class LazyEmbedding:
         embeddings = _get_embeddings(self.model, [le.src for le in lazy_embeddings])
         for i, item in enumerate(lazy_embeddings):
             item.embedding = embeddings[i]
-            self.cache_table[item.hash_key] = item.embedding
+            self.cache_embed.add_cache(self.model, item.src, item.embedding)
         LazyEmbedding.lazy_embeddings[self.model] = []
 
     def __str__(self):
@@ -50,9 +50,7 @@ class LazyEmbedding:
 def get_embeddings(texts: list[str], model=None, lazy=True) -> list[list[float]]:
     if model is None:
         model = default_models["embedding"]
-
-    cache_table = caching.cache_embed.load_cache_table(model)
-    hash_keys = [hashlib.md5(text.encode()).hexdigest() for text in texts]
+    cache_embed = caching.cache_embed
 
     embeddings = []
     index_for_eval = []
@@ -61,21 +59,22 @@ def get_embeddings(texts: list[str], model=None, lazy=True) -> list[list[float]]
         if len(text) == 0:
             embeddings.append(0)
             continue
-        if hash_keys[i] not in cache_table:
+        embedding_from_cache = cache_embed.read_cache(model, text)
+        if embedding_from_cache is None:
             texts_without_cache.append(text)
             embeddings.append(None)
             index_for_eval.append(i)
         else:
-            embeddings.append(cache_table[hash_keys[i]])
+            embeddings.append(embedding_from_cache)
     if len(texts_without_cache) > 0:
         if not lazy:
             res = _get_embeddings(model, texts_without_cache)
             for i, r in zip(index_for_eval, res):
-                cache_table[hash_keys[i]] = r
+                cache_embed.add_cache(model, texts[i], r)
                 embeddings[i] = r
         else:
             for i in index_for_eval:
-                le = LazyEmbedding(texts[i], model, hash_keys[i], cache_table)
+                le = LazyEmbedding(texts[i], model, cache_embed)
                 embeddings[i] = le
 
     return embeddings
@@ -83,5 +82,5 @@ def get_embeddings(texts: list[str], model=None, lazy=True) -> list[list[float]]
 
 def _get_embeddings(model, texts_without_cache):
     res = embedding(model, input=texts_without_cache)
-    res = [np.array(r['embedding']) for r in res.data]
+    res = [np.array(r['embedding'], dtype=np.float32) for r in res.data]
     return res

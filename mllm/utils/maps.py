@@ -72,7 +72,8 @@ def p_map(func, args, n_workers=None, title=None):
                            desc=title):
             results.append(result)
             time_now = time.time()
-            if time_now - start_time > 5:
+            # save cache every 10 seconds
+            if time_now - start_time > 10:
                 caching.save()
                 start_time = time_now
     caching.save()

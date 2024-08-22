@@ -35,16 +35,25 @@ class CacheService:
         self.cache_kv.save_all_cache_to_file()
         for cache_kv in self.cache_kv_other.values():
             cache_kv.save_all_cache_to_file()
-        self.cache_embed.save_cache_table()
+        self.cache_embed.save_pending_cache()
         for cache_embed in self.cache_embed_other.values():
-            cache_embed.save_cache_table()
+            cache_embed.save_pending_cache()
 
     def save_used(self):
         self.cache_kv.save_all_cache_to_file(filter_unused_cache=True)
         for cache_kv in self.cache_kv_other.values():
             cache_kv.save_all_cache_to_file(filter_unused_cache=True)
         # TODO: save only used embedding cache
-        self.cache_embed.save_cache_table()
+        self.cache_embed.save_pending_cache()
+
+    def close(self):
+        self.cache_embed.close()
+        for cache_embed in self.cache_embed_other.values():
+            cache_embed.close()
+
+    def at_exit(self):
+        self.save()
+        self.close()
 
     def refresh_cache(self, disable=False):
         """
@@ -64,20 +73,22 @@ class CacheService:
 
     def _load_cache_on_path(self, postfix: List[str]):
         self.cache_kv.apply_cache_update()
-        cache_path = get_cache_path(self.base_path, postfix)
-        cache_dir = os.path.dirname(cache_path)
+        kv_cache_path = get_cache_path(self.base_path, postfix)
+        cache_dir = os.path.dirname(kv_cache_path)
 
-        if cache_path in self.cache_kv_other:
-            self.cache_kv = self.cache_kv_other[cache_path]
+        if kv_cache_path in self.cache_kv_other:
+            self.cache_kv = self.cache_kv_other[kv_cache_path]
         else:
-            self.cache_kv = CacheTableKV(cache_path)
-            self.cache_kv_other[cache_path] = self.cache_kv
+            self.cache_kv = CacheTableKV(kv_cache_path)
+            self.cache_kv_other[kv_cache_path] = self.cache_kv
+
+        embed_cache_postfix = "".join(["."+p for p in postfix[1:]])
 
         if cache_dir in self.cache_embed_other:
-            self.cache_embed = self.cache_embed_other[cache_dir]
+            self.cache_embed = self.cache_embed_other[(cache_dir, embed_cache_postfix)]
         else:
-            self.cache_embed = CacheTableEmbed(cache_dir)
-            self.cache_embed_other[cache_dir] = self.cache_embed
+            self.cache_embed = CacheTableEmbed(cache_dir, embed_cache_postfix)
+            self.cache_embed_other[(cache_dir, embed_cache_postfix)] = self.cache_embed
 
     def push_postfix(self, postfix):
         self.postfix_stack.append(postfix)
@@ -169,4 +180,4 @@ class DisableCacheContext:
 caching = CacheService()
 
 # save cache on exit
-atexit.register(caching.save)
+atexit.register(caching.at_exit)
