@@ -25,7 +25,7 @@ class CacheTableEmbed:
         cursor.execute('''CREATE TABLE embedding_cache
                          (hash TEXT PRIMARY KEY, 
                          model_name text, 
-                         data text,
+                         date text,
                          embedding blob)''')
         self.db_conn.commit()
 

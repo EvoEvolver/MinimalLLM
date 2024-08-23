@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import sqlite3
+from datetime import date
 from typing import Dict, Optional, Set
 
 
@@ -76,6 +77,7 @@ class CacheTableKV:
                          (hash TEXT PRIMARY KEY,
                          type text,
                          value text,
+                         date text,
                          meta text)''')
         self.db_conn.commit()
 
@@ -138,8 +140,8 @@ class CacheTableKV:
         for hash, cache in self.pending_cache.items():
             if cache.is_valid():
                 self.active_cache_hash.add(cache.hash)
-                cursor.execute("INSERT OR REPLACE INTO cache_table VALUES (?, ?, ?, ?)",
-                               (cache.hash, cache.type, cache.value, json.dumps(cache.meta)))
+                cursor.execute("INSERT OR REPLACE INTO cache_table VALUES (?, ?, ?, ?, ?)",
+                               (cache.hash, cache.type, cache.value, str(date.today()), str(cache.meta)))
 
             else:
                 remaining_cache[hash] = cache
