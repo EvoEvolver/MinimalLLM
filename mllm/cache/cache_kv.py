@@ -119,7 +119,10 @@ class CacheTableKV:
             un_hit = True
         else:
             cache_value, meta = res
-            meta = json.loads(meta)
+            if meta != "None":
+                meta = json.loads(meta)
+            else:
+                meta = {}
             un_hit = False
 
         if type in self.types_to_refresh or self.refresh_all:
