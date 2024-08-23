@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import threading
 from datetime import date
 from typing import Dict, Optional, Set
 
@@ -46,6 +47,44 @@ class Cache:
 
 CacheTable = Dict[str, Cache]
 
+class ConnPool:
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+        self.conn_pool = {}
+        self.clock = 0
+
+    def get_conn(self):
+        thread_id = threading.get_ident()
+        if thread_id not in self.conn_pool:
+            self.conn_pool[thread_id] = (sqlite3.connect(self.db_path), self.clock)
+            self.clock += 1
+        self.remove_oldest()
+        return self.conn_pool[thread_id][0]
+
+    def remove_oldest(self):
+        if len(self.conn_pool) > 20:
+            # find the oldest connection
+            oldest_conn = None
+            oldest_added_time = None
+            for conn_id, (conn, added_time) in self.conn_pool.items():
+                if oldest_conn is None or added_time < oldest_added_time:
+                    oldest_conn = conn
+                    oldest_added_time = added_time
+            oldest_conn.close()
+
+    def close_conn(self):
+        thread_id = threading.get_ident()
+        if thread_id in self.conn_pool:
+            self.conn_pool[thread_id][0].close()
+            del self.conn_pool[thread_id]
+
+    def close_all(self):
+        for (conn, added_time) in self.conn_pool.values():
+            conn.close()
+        self.conn_pool = {}
+
+
+
 class CacheTableKV:
     def __init__(self, cache_path: str):
         self.cache_path = cache_path
@@ -67,19 +106,20 @@ class CacheTableKV:
         if len(db_dir) != 0:
             if not os.path.exists(db_dir):
                 os.makedirs(db_dir)
-        self.db_conn = sqlite3.connect(db_path)
         if not db_exist:
             self.create_cache_table()
+        self.conn_pool = ConnPool(db_path)
 
     def create_cache_table(self):
-        cursor = self.db_conn.cursor()
+        db_conn = self.conn_pool.get_conn()
+        cursor = db_conn.cursor()
         cursor.execute('''CREATE TABLE cache_table
                          (hash TEXT PRIMARY KEY,
                          type text,
                          value text,
                          date text,
                          meta text)''')
-        self.db_conn.commit()
+        db_conn.commit()
 
     def save_all_cache_to_file(self, filter_unused_cache=False):
         if filter_unused_cache:
@@ -90,21 +130,25 @@ class CacheTableKV:
 
     def filter_unused_cache(self) -> int:
         # remove all the rows whose hash is not in self.active_cache_hash
-        cursor = self.db_conn.cursor()
+        db_conn = self.conn_pool.get_conn()
+        cursor = db_conn.cursor()
         n_rows = cursor.execute("SELECT COUNT(*) FROM cache_table").fetchone()[0]
         cursor.execute("DELETE FROM cache_table WHERE hash NOT IN ({})".format(
             ",".join(["?"] * len(self.active_cache_hash))), tuple(self.active_cache_hash))
         n_rows_after = cursor.execute("SELECT COUNT(*) FROM cache_table").fetchone()[0]
-        self.db_conn.commit()
+        db_conn.commit()
         return n_rows - n_rows_after
 
     def read_cache(self, input: any, type: str, create_cache=True) -> Cache | None:
+
         if self.inactive:
             return None
         hash = get_hash(input)
 
-        cursor = self.db_conn.cursor()
+        db_conn = self.conn_pool.get_conn()
+        cursor = db_conn.cursor()
         cursor.execute("SELECT value, meta FROM cache_table WHERE hash = ? AND type = ?", (hash, type))
+        db_conn.commit()
         res = cursor.fetchone()
 
         meta = {}
@@ -136,7 +180,8 @@ class CacheTableKV:
 
     def apply_cache_update(self):
         remaining_cache = {}
-        cursor = self.db_conn.cursor()
+        db_conn = self.conn_pool.get_conn()
+        cursor = db_conn.cursor()
         for hash, cache in self.pending_cache.items():
             if cache.is_valid():
                 self.active_cache_hash.add(cache.hash)
@@ -145,14 +190,14 @@ class CacheTableKV:
 
             else:
                 remaining_cache[hash] = cache
-        self.db_conn.commit()
+        db_conn.commit()
         self.pending_cache = remaining_cache
 
     def discard_cache_update(self):
         self.pending_cache = {}
 
     def close(self):
-        self.db_conn.close()
+        self.conn_pool.close_all()
 
 
 
