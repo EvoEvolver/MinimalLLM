@@ -5,6 +5,8 @@ import numpy as np
 import sqlite3
 from datetime import date
 
+from mllm.cache.conn_pool import ConnPool
+
 
 def get_hash(text: str):
     return hashlib.md5(text.encode()).hexdigest()
@@ -16,9 +18,13 @@ class CacheTableEmbed:
         self.pending_cache = {}
         db_path = self.get_db_path()
         db_exist = os.path.exists(db_path)
-        self.db_conn = sqlite3.connect(self.get_db_path())
+        self.conn_pool = ConnPool(self.get_db_path())
         if not db_exist:
             self.create_cache_table()
+
+    @property
+    def db_conn(self):
+        return self.conn_pool.get_conn()
 
     def create_cache_table(self):
         cursor = self.db_conn.cursor()
@@ -59,4 +65,4 @@ class CacheTableEmbed:
         self.db_conn.commit()
 
     def close(self):
-        self.db_conn.close()
+        self.conn_pool.close_all()

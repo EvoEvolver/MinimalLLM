@@ -282,7 +282,7 @@ class Chat:
     def _complete_chat_impl(self, model: str, use_cache: bool, options):
         messages = self.get_messages_to_api()
         if use_cache:
-            cache = caching.cache_kv.read_cache(messages, "chat")
+            cache = caching.cache_kv.read_cache(messages, "chat_"+model)
             if cache is not None and cache.is_valid():
                 return cache.value
 

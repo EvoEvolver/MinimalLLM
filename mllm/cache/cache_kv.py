@@ -3,11 +3,10 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import sqlite3
-import threading
 from datetime import date
 from typing import Dict, Optional, Set
 
+from mllm.cache.conn_pool import ConnPool
 
 
 def get_hash(data: any) -> str:
@@ -26,7 +25,7 @@ class Cache:
         self.hash: str = hash
         self.input: any = ""#input
         self.type: str = type
-        self.meta = meta
+        self.meta = meta or {}
 
     def get_self_dict(self):
         return {
@@ -46,43 +45,6 @@ class Cache:
 
 
 CacheTable = Dict[str, Cache]
-
-class ConnPool:
-    def __init__(self, db_path: str):
-        self.db_path = db_path
-        self.conn_pool = {}
-        self.clock = 0
-
-    def get_conn(self):
-        thread_id = threading.get_ident()
-        if thread_id not in self.conn_pool:
-            self.conn_pool[thread_id] = (sqlite3.connect(self.db_path), self.clock)
-            self.clock += 1
-        self.remove_oldest()
-        return self.conn_pool[thread_id][0]
-
-    def remove_oldest(self):
-        if len(self.conn_pool) > 20:
-            # find the oldest connection
-            oldest_conn = None
-            oldest_added_time = None
-            for conn_id, (conn, added_time) in self.conn_pool.items():
-                if oldest_conn is None or added_time < oldest_added_time:
-                    oldest_conn = conn
-                    oldest_added_time = added_time
-            oldest_conn.close()
-
-    def close_conn(self):
-        thread_id = threading.get_ident()
-        if thread_id in self.conn_pool:
-            self.conn_pool[thread_id][0].close()
-            del self.conn_pool[thread_id]
-
-    def close_all(self):
-        for (conn, added_time) in self.conn_pool.values():
-            conn.close()
-        self.conn_pool = {}
-
 
 
 class CacheTableKV:
@@ -182,7 +144,7 @@ class CacheTableKV:
         remaining_cache = {}
         db_conn = self.conn_pool.get_conn()
         cursor = db_conn.cursor()
-        for hash, cache in self.pending_cache.items():
+        for hash, cache in list(self.pending_cache.items()):
             if cache.is_valid():
                 self.active_cache_hash.add(cache.hash)
                 cursor.execute("INSERT OR REPLACE INTO cache_table VALUES (?, ?, ?, ?, ?)",
