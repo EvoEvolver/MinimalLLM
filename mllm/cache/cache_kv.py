@@ -3,12 +3,13 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from typing import Dict, Optional, List, Set
+import sqlite3
+from typing import Dict, Optional, Set
 
 
 
-def get_hash(data: any, type: str) -> str:
-    return hashlib.sha1(json.dumps([data, type]).encode("utf-8")).hexdigest()
+def get_hash(data: any) -> str:
+    return hashlib.sha1(json.dumps(data).encode("utf-8")).hexdigest()
 
 
 class Cache:
@@ -44,21 +45,11 @@ class Cache:
 
 CacheTable = Dict[str, Cache]
 
-
-def serialize_cache_table(cache_table: Dict[str, Cache]):
-    res = []
-    for key, cache in cache_table.items():
-        res.append(cache.get_self_dict())
-    return json.dumps(res, indent=1)
-
-
 class CacheTableKV:
     def __init__(self, cache_path: str):
         self.cache_path = cache_path
-        # Map from hash to cache
-        self.cache_table: Dict[str, Cache] = self.load_cache_table()
         # List of pending cache
-        self.pending_cache: List[Cache] = []
+        self.pending_cache: Dict[str, Cache] = {}
         # List of active cache. Used for garbage collection
         self.active_cache_hash: Set[str] = set()
         #
@@ -68,77 +59,99 @@ class CacheTableKV:
         #
         self.inactive = False
 
+        db_path = cache_path
+        db_exist = os.path.exists(db_path)
+        db_dir = os.path.dirname(db_path)
+        # create the directory if not exist
+        if len(db_dir) != 0:
+            if not os.path.exists(db_dir):
+                os.makedirs(db_dir)
+        self.db_conn = sqlite3.connect(db_path)
+        if not db_exist:
+            self.create_cache_table()
+
+    def create_cache_table(self):
+        cursor = self.db_conn.cursor()
+        cursor.execute('''CREATE TABLE cache_table
+                         (hash TEXT PRIMARY KEY,
+                         type text,
+                         value text,
+                         meta text)''')
+        self.db_conn.commit()
+
     def save_all_cache_to_file(self, filter_unused_cache=False):
         if filter_unused_cache:
             n_remove = self.filter_unused_cache()
             if n_remove > 0:
                 print(f"Removed {n_remove} unused cache")
         self.apply_cache_update()
-        if len(self.cache_table) == 0:
-            return
-        os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
-        with open(self.cache_path, "w") as f:
-            f.write(serialize_cache_table(self.cache_table))
 
     def filter_unused_cache(self) -> int:
-        n_removed_cache = 0
-        new_cache_table = {}
-        for hash, cache in self.cache_table.items():
-            if hash in self.active_cache_hash:
-                new_cache_table[hash] = cache
-            else:
-                n_removed_cache += 1
-        self.cache_table = new_cache_table
-        return n_removed_cache
+        # remove all the rows whose hash is not in self.active_cache_hash
+        cursor = self.db_conn.cursor()
+        n_rows = cursor.execute("SELECT COUNT(*) FROM cache_table").fetchone()[0]
+        cursor.execute("DELETE FROM cache_table WHERE hash NOT IN ({})".format(
+            ",".join(["?"] * len(self.active_cache_hash))), tuple(self.active_cache_hash))
+        n_rows_after = cursor.execute("SELECT COUNT(*) FROM cache_table").fetchone()[0]
+        self.db_conn.commit()
+        return n_rows - n_rows_after
 
     def read_cache(self, input: any, type: str, create_cache=True) -> Cache | None:
         if self.inactive:
             return None
-        hash = get_hash(input, type)
-        un_hit = hash not in self.cache_table
+        hash = get_hash(input)
+
+        cursor = self.db_conn.cursor()
+        cursor.execute("SELECT value, meta FROM cache_table WHERE hash = ? AND type = ?", (hash, type))
+        res = cursor.fetchone()
+
+        meta = {}
+        cache_value = None
+        if res is None:
+            un_hit = True
+        else:
+            cache_value, meta = res
+            meta = json.loads(meta)
+            un_hit = False
+
         if type in self.types_to_refresh or self.refresh_all:
             un_hit = True
         if un_hit:
             if create_cache:
-                new_cache = Cache(None, hash, input, type)
+                new_cache = Cache(None, hash, input, type, meta)
                 self.add_cache(new_cache)
                 return new_cache
             else:
                 return None
-        cache_hit = self.cache_table[hash]
+
+        cache_hit = Cache(cache_value, hash, input, type, meta)
         self.active_cache_hash.add(hash)
+
         return cache_hit
 
     def add_cache(self, cache: Cache):
-        self.pending_cache.append(cache)
+        self.pending_cache[cache.hash] = cache
 
     def apply_cache_update(self):
-        remaining_cache = []
-        for cache in self.pending_cache:
+        remaining_cache = {}
+        cursor = self.db_conn.cursor()
+        for hash, cache in self.pending_cache.items():
             if cache.is_valid():
                 self.active_cache_hash.add(cache.hash)
-                self.cache_table[cache.hash] = cache
+                cursor.execute("INSERT OR REPLACE INTO cache_table VALUES (?, ?, ?, ?)",
+                               (cache.hash, cache.type, cache.value, json.dumps(cache.meta)))
+
             else:
-                remaining_cache.append(cache)
+                remaining_cache[hash] = cache
+        self.db_conn.commit()
         self.pending_cache = remaining_cache
 
     def discard_cache_update(self):
-        self.pending_cache = []
+        self.pending_cache = {}
 
-    def load_cache_table(self) -> CacheTable:
-        if not os.path.exists(self.cache_path):
-            return {}
-        with open(self.cache_path, "r") as f:
-            try:
-                cache_list = json.load(f)
-            except json.decoder.JSONDecodeError:
-                cache_list = []
-        cache_table = {}
-        for cache_dict in cache_list:
-            cache = Cache(cache_dict["value"], cache_dict["hash"], cache_dict["input"],
-                          cache_dict["type"], cache_dict["meta"])
-            cache_table[cache.hash] = cache
-        return cache_table
+    def close(self):
+        self.db_conn.close()
+
 
 
 

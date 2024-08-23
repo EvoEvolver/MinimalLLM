@@ -16,7 +16,7 @@ def get_cache_path(main_path: str, postfix):
     dir_name = main_path
     assert len(postfix) > 0
     postfix_str = ".".join(postfix)
-    return os.path.join(dir_name, ".llm_cache", postfix_str + ".json")
+    return os.path.join(dir_name, ".llm_cache", postfix_str + ".db")
 
 
 class CacheService:
@@ -50,6 +50,9 @@ class CacheService:
         self.cache_embed.close()
         for cache_embed in self.cache_embed_other.values():
             cache_embed.close()
+        self.cache_kv.close()
+        for cache_kv in self.cache_kv_other.values():
+            cache_kv.close()
 
     def at_exit(self):
         self.save()
