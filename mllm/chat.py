@@ -4,6 +4,7 @@ import base64
 import copy
 import html
 import textwrap
+import time
 from io import BytesIO
 
 import httpx
@@ -276,6 +277,7 @@ class Chat:
                 import traceback
                 print(traceback.format_exc())
                 print("Retrying...")
+                time.sleep(2.0)
         raise Exception(
             "Failed to complete chat. Did you set the correct API key? Did you prompt the model to output the expected parsing format?")
 

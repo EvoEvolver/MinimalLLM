@@ -68,9 +68,9 @@ class CacheTableKV:
         if len(db_dir) != 0:
             if not os.path.exists(db_dir):
                 os.makedirs(db_dir)
+        self.conn_pool = ConnPool(db_path)
         if not db_exist:
             self.create_cache_table()
-        self.conn_pool = ConnPool(db_path)
 
     def create_cache_table(self):
         db_conn = self.conn_pool.get_conn()
