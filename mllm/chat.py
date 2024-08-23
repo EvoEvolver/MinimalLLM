@@ -247,7 +247,7 @@ class Chat:
             if contains_image:
                 model = default_models["vision"]
 
-        if get_llm_provider(model)[1] in ["openai", "anthropic"]:
+        if get_llm_provider(model)[1] in ["openai"]:
             if parse == "dict":
                 if not contains_image or model == "gpt-4o":
                     options["response_format"] = {"type": "json_object"}
