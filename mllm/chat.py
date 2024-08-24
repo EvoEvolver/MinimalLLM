@@ -4,6 +4,7 @@ import base64
 import copy
 import html
 import textwrap
+import time
 from io import BytesIO
 
 import httpx
@@ -246,7 +247,7 @@ class Chat:
             if contains_image:
                 model = default_models["vision"]
 
-        if get_llm_provider(model)[1] in ["openai", "anthropic"]:
+        if get_llm_provider(model)[1] in ["openai"]:
             if parse == "dict":
                 if not contains_image or model == "gpt-4o":
                     options["response_format"] = {"type": "json_object"}
@@ -276,13 +277,14 @@ class Chat:
                 import traceback
                 print(traceback.format_exc())
                 print("Retrying...")
+                time.sleep(2.0)
         raise Exception(
             "Failed to complete chat. Did you set the correct API key? Did you prompt the model to output the expected parsing format?")
 
     def _complete_chat_impl(self, model: str, use_cache: bool, options):
         messages = self.get_messages_to_api()
         if use_cache:
-            cache = caching.cache_kv.read_cache(messages, "chat")
+            cache = caching.cache_kv.read_cache(messages, "chat_"+model)
             if cache is not None and cache.is_valid():
                 return cache.value
 

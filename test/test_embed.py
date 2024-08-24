@@ -19,7 +19,7 @@ def test_vector_store_basic2():
 
 def test_lazy_embedding():
     get_embeddings("1")
-    caching.cache_embed.clear_cache_table(default_models["embedding"])
+    caching.cache_embed.clear_cache_table()
 
     texts_1 = ["banana", "headset", "Mike"]
     texts_2 = ["earphone", "PC"]
