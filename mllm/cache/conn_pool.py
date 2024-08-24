@@ -14,7 +14,7 @@ class ConnPool:
     def get_conn(self):
         thread_id = threading.get_ident()
         if thread_id not in self.conn_pool:
-            self.conn_pool[thread_id] = (sqlite3.connect(self.db_path), self.clock)
+            self.conn_pool[thread_id] = (sqlite3.connect(self.db_path, check_same_thread=False), self.clock)
             self.clock += 1
         self.remove_oldest()
         return self.conn_pool[thread_id][0]

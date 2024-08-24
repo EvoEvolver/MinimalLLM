@@ -46,7 +46,7 @@ def parallel_map(func, *args, n_workers=None, title=None):
                            desc=title):
             results.append(result)
             time_now = time.time()
-            if time_now - start_time > 5:
+            if time_now - start_time > 10:
                 caching.save()
                 start_time = time_now
     caching.save()
@@ -54,6 +54,13 @@ def parallel_map(func, *args, n_workers=None, title=None):
 
 
 def p_map(func, args, n_workers=None, title=None):
+    """
+    Example usage: `for arg, res in parallel_map(lambda x: x + 1, [1, 2, 3, 4, 5], n_workers=4): do_something`
+    :param func: The function to apply on each element of args
+    :param args: The arguments to apply func
+    :param n_workers: Number of workers
+    :yield: (arg, res) for each arg in args
+    """
     from mllm.cache.cache_service import caching
     if n_workers is None:
         n_workers = default_parallel_map_config["n_workers"]
