@@ -24,14 +24,27 @@ class Parse:
         if start == -1 or end == -1:
             raise ValueError(f"Invalid json: {src}")
         json_src = src[start:end + 1]
+
         try:
             res = json.loads(json_src)
+            return res
         except:
-            try:
-                res = ast.literal_eval(json_src)
-            except:
-                raise ValueError(f"Invalid json/dict: {src}")
-        return res
+            pass
+
+        try:
+            res = ast.literal_eval(json_src)
+            return res
+        except:
+            pass
+
+        json_src_replaced = json_src.replace("\n", " ")
+        try:
+            res = json.loads(json_src_replaced)
+            return res
+        except:
+            pass
+
+        raise ValueError(f"Invalid json: {src}")
 
     @staticmethod
     def list(src):

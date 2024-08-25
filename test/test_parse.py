@@ -24,7 +24,7 @@ Start your answer with ```python
 """
     chat = Chat()
     chat += prompt
-    res = chat.complete(parse="quotes", cache=True)
+    res = chat.complete(parse="quotes")
     print(res)
 
 def test_dict_gen():
