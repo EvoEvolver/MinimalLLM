@@ -110,6 +110,12 @@ class Parse:
 
 
 def parse_json_by_cheap_model(json_src):
+    """
+    Correct a JSON dict with semantic errors using a model that support JSON model
+    This is especially for claude models because they do not support JSON model
+    :param json_src:
+    :return:
+    """
     from mllm import Chat
     prompt = f"""
 You are required to correct a JSON dict with semantic errors. 
