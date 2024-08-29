@@ -5,6 +5,12 @@ import json
 # Parse
 """
 
+parse_options = {
+    "cheap_model": "gpt-4o-mini",
+    "correct_json_by_model": False,
+}
+
+
 class Parse:
 
     @staticmethod
@@ -43,6 +49,13 @@ class Parse:
             return res
         except:
             pass
+
+        if parse_options["correct_json_by_model"]:
+            try:
+                res = parse_json_by_cheap_model(json_src)
+                return res
+            except:
+                pass
 
         raise ValueError(f"Invalid json: {src}")
 
@@ -94,3 +107,17 @@ class Parse:
             raise ValueError("Invalid colon string")
         contents = split[1].strip()
         return contents
+
+
+def parse_json_by_cheap_model(json_src):
+    from mllm import Chat
+    prompt = f"""
+You are required to correct a JSON dict with semantic errors. 
+<raw_json>
+{json_src}
+</raw_json>
+You should directly output the corrected JSON dict with a minimal modification.
+"""
+    chat = Chat(prompt)
+    res = chat.complete(parse="dict", model=parse_options["cheap_model"])
+    return res

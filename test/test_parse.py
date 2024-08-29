@@ -1,5 +1,6 @@
 from mllm import Chat
-from mllm.utils.parser import Parse
+from mllm.utils.parser import Parse, parse_json_by_cheap_model
+
 
 def test_parse_quotes():
     src = """
@@ -35,3 +36,18 @@ Generate a json dict with keys 'a' and 'b' and values 1 and 2
     chat += prompt
     res = chat.complete(parse="dict", cache=False)
     assert res == {"a": 1, "b": 2}
+
+def test_model_correct():
+    raw_json = """
+{
+no_quote : "
+string 
+with 
+line 
+change
+"
+}    
+   
+"""
+    res = parse_json_by_cheap_model(raw_json)
+    assert res == {'no_quote': '\nstring \nwith \nline \nchange\n'}
