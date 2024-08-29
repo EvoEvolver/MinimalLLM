@@ -56,3 +56,16 @@ chat += "Start your answer with Summary:"
 res = chat.complete(parse="colon")
 print(res)
 ```
+
+## Automated correction
+
+Some good LLMs do not support a JSON mode, such as claude models. They usually output JSON with small semantic errors. We designed an auto-correction rule to fix these errors by inputting these bad JSON into a cheap LLM that supports JSON mode.
+
+You have to turn on this feature by setting `parse_options.correct_json_by_model = True`.
+
+```python 
+from mllm.config import parse_options
+# You have to enable this option before using the `correct_json_by_model` rule
+parse_options.correct_json_by_model = True
+# parse_options.cheap_model = "gpt-4o-mini" # The default model is gpt-4o-mini
+```
