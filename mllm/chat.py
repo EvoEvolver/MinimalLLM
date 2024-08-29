@@ -236,16 +236,16 @@ class Chat:
         """
         if options is None:
             options = {}
-        options = {**default_options, **options}
+        options = {**default_options.get_dict(), **options}
 
         contains_image = self.contains_image()
         if model is None:
             if not expensive:
-                model = default_models["normal"]
+                model = default_models.normal
             else:
-                model = default_models["expensive"]
+                model = default_models.expensive
             if contains_image:
-                model = default_models["vision"]
+                model = default_models.vision
 
         if get_llm_provider(model)[1] in ["openai"]:
             if parse == "dict":

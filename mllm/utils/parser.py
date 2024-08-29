@@ -1,14 +1,19 @@
 import ast
 import json
+from dataclasses import dataclass
 
 """
 # Parse
 """
 
-parse_options = {
-    "cheap_model": "gpt-4o-mini",
-    "correct_json_by_model": False,
-}
+
+@dataclass
+class ParseOptions:
+    cheap_model: str = "gpt-4o-mini"
+    correct_json_by_model: bool = False
+
+
+parse_options = ParseOptions()
 
 
 class Parse:
@@ -50,7 +55,7 @@ class Parse:
         except:
             pass
 
-        if parse_options["correct_json_by_model"]:
+        if parse_options.correct_json_by_model:
             try:
                 res = parse_json_by_cheap_model(json_src)
                 return res
@@ -87,7 +92,7 @@ class Parse:
                 break
         else:
             raise ValueError("No closing quotes")
-        for end in range(start+1, len(split_lines)):
+        for end in range(start + 1, len(split_lines)):
             if split_lines[end].startswith("```"):
                 break
         else:
@@ -125,5 +130,5 @@ You are required to correct a JSON dict with semantic errors.
 You should directly output the corrected JSON dict with a minimal modification.
 """
     chat = Chat(prompt)
-    res = chat.complete(parse="dict", model=parse_options["cheap_model"])
+    res = chat.complete(parse="dict", model=parse_options.cheap_model)
     return res
