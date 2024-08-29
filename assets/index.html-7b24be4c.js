@@ -1,0 +1,1 @@
+import{_ as e,o as t,c as o,a as n}from"./app-1c2aa06c.js";const c={},_=n("p",null,"Welcome to the Minimal documentation!",-1),s=[_];function a(l,i){return t(),o("div",null,s)}const d=e(c,[["render",a],["__file","index.html.vue"]]);export{d as default};
