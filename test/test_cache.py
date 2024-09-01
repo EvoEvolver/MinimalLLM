@@ -3,13 +3,13 @@ from mllm.chat import Chat
 from mllm.utils import p_map
 
 def test_cached_chat():
-    def get_random_number():
+    def get_random_response():
         chat = Chat()
-        chat += "Give me a random number from 1 to 10"
-        res = chat.complete(cache=True)
+        chat += "Introduce your self in one sentence."
+        res = chat.complete(cache=True, options={"temperature": 1})
         return res
-    num_1 = get_random_number()
-    num_2 = get_random_number()
+    num_1 = get_random_response()
+    num_2 = get_random_response()
     assert num_1 == num_2
 
 ## See all test_image_chat_cache in test_image.py
