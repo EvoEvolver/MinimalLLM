@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import base64
 import copy
-import html
 import textwrap
 import time
 from io import BytesIO
@@ -12,10 +11,9 @@ from PIL.Image import Image
 from litellm import completion, get_llm_provider
 
 from mllm.cache.cache_service import caching
+from mllm.chat_logger import ChatLogger
 from mllm.special_models import get_special_model_handler
-from mllm.utils.logger import Logger
 from mllm.config import default_models, default_options
-from mllm.display.show_html import show_json_table
 from mllm.utils.parser import Parse
 
 n_chat_retry = 3
@@ -23,43 +21,6 @@ n_chat_retry = 3
 
 def encode_image(image_file: BytesIO):
     return base64.b64encode(image_file.read()).decode('utf-8')
-
-
-def get_chat_in_html(message_to_api: list[dict]):
-    res = []
-    for entry in message_to_api:
-        if isinstance(entry["content"], str):
-            entry["content"] = [{"type": "text", "text": entry["content"]}]
-        content = []
-        for item in entry["content"]:
-            if item["type"] == "text":
-                text = item["text"]
-                text = html.escape(text)
-                text = text.replace("\n", "<br/>")
-                text = text.replace(" ", "&nbsp;")
-                content.append(text)
-            elif item["type"] == "image_url":
-                content.append("<image src='{}' style='max-height: 200px;'/>".format(
-                    item["image_url"]["url"]))
-        content = "<br/>".join(content)
-        res.append(f"------{entry['role']}------<br/> {content}")
-    return "<br/>".join(res)
-
-
-class ChatLogger(Logger):
-    active_loggers = []
-
-    def display_log(self):
-        contents = [get_chat_in_html(message_to_api) for message_to_api in self.log_list]
-        filenames = [caller_name.split("/")[-1] for caller_name in self.caller_list]
-        info_list = []
-        for i in range(len(contents)):
-            content = contents[i]
-            info_list.append({
-                "filename": filenames[i],
-                "content": content
-            })
-        show_json_table(info_list)
 
 
 class ParseError(Exception):
@@ -254,9 +215,9 @@ class Chat:
 
         for n_tries in range(n_chat_retry):
             try:
-                res = self._complete_chat_impl(model, cache, options)
+                res, additional_res = self._complete_chat_impl(model, cache, options)
                 self.add_assistant_message(res)
-                ChatLogger.add_log_to_all(self.get_messages_to_api(), stack_depth=1)
+                ChatLogger.add_log_to_all((self.get_messages_to_api(), additional_res), stack_depth=1)
                 try:
                     if parse is not None:
                         final_res = parse_res(parse, res)
@@ -289,15 +250,19 @@ class Chat:
                 return cache.value
 
         options = options or {}
-
+        additional_res = {}
         special_handler = get_special_model_handler(model)
         if special_handler is None:
-            res = completion(model, messages=messages, **options).choices[0].message.content
+            response = completion(model, messages=messages, **options)
+            res = response.choices[0].message.content
+            usage = response.model_extra["usage"]
+            additional_res["prompt_tokens"] = usage.prompt_tokens
+            additional_res["completion_tokens"] = usage.completion_tokens
         else:
             res = special_handler(messages, options)
         if use_cache and cache is not None:
             cache.set_cache(res)
-        return res
+        return res, additional_res
 
     """
     ## Magic methods
