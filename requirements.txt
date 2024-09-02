@@ -1,7 +1,7 @@
 numpy<=1.26
 httpx
 pillow
-litellm
+litellm<=1.43.19
 tenacity
 tqdm
 json2html

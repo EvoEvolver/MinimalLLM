@@ -246,15 +246,16 @@ class Chat:
         messages = self.get_messages_to_api()
         mock_response = None
         cache = None
+        additional_res = {}
         if use_cache:
             cache = caching.cache_kv.read_cache(messages, "chat_"+model)
             if cache is not None and cache.is_valid():
                 mock_response = cache.value
+                additional_res["cache_hit"] = True
                 # Avoid unnecessary cache rewriting
                 use_cache = False
 
         options = options or {}
-        additional_res = {}
         special_handler = get_special_model_handler(model)
         if special_handler is None:
             response = completion(model, messages=messages, mock_response=mock_response, **options)
