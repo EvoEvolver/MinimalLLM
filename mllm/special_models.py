@@ -1,10 +1,10 @@
 import os
 
-from litellm import completion
-
 
 def get_llava_response(messages, options, model_name):
-    prompt, image = extract_prompt_and_image(messages)
+    prompt, images = extract_prompt_and_image(messages)
+    assert len(images) == 1, "Only one image supported in llava model"
+    image = images[0]
     try:
         import replicate
     except ImportError:
@@ -38,7 +38,8 @@ def get_llama_response(messages, options, model_name):
         raise ImportError("Please install the `replicate` package to use the llama model")
     model_name = model_name.split("/")[1:]
     model_name = "/".join(model_name)
-    prompt, image = extract_prompt_and_image(messages)
+    prompt, images = extract_prompt_and_image(messages)
+    assert len(images) == 0, "Image not supported in llama model"
     output = replicate.run(
         model_name,
         input={
@@ -56,7 +57,7 @@ def get_llama_response(messages, options, model_name):
 def extract_prompt_and_image(messages):
 
     prompt = []
-    image = None
+    images = []
     for message in messages:
         if message["role"] == "user":
             content = message["content"]
@@ -68,6 +69,7 @@ def extract_prompt_and_image(messages):
                         prompt.append(item["text"])
                     elif item["type"] == "image_url":
                         image = item["image_url"]["url"]
+                        images.append(image)
         else:
             if isinstance(message["content"], str):
                 prompt.append(f"<{message['role']}>" + message['content'] + f"<{message['role']}>")
@@ -81,7 +83,7 @@ def extract_prompt_and_image(messages):
                         raise ValueError("Image URL not supported in assistant or system prompts.")
 
     prompt = "\n".join(prompt)
-    return prompt, image
+    return prompt, images
 
 
 special_models = {
