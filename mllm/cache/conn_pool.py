@@ -9,14 +9,18 @@ class ConnPool:
         self.db_path = db_path
         self.conn_pool = {}
         self.clock = 0
-        self.max_conn = 100
+        self.max_conn = 50
+        self.lock_for_closing = threading.Lock()
 
     def get_conn(self):
         thread_id = threading.get_ident()
         if thread_id not in self.conn_pool:
             self.conn_pool[thread_id] = (sqlite3.connect(self.db_path, check_same_thread=False), self.clock)
             self.clock += 1
+        # wait for the lock
+        self.lock_for_closing.acquire(blocking=True, timeout=-1)
         self.remove_oldest()
+        self.lock_for_closing.release()
         return self.conn_pool[thread_id][0]
 
     def remove_oldest(self):
