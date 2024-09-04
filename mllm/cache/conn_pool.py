@@ -8,46 +8,41 @@ class ConnPool:
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.conn_pool = {}
-        self.clock = 0
+        self.threads = {}
         self.max_conn = 50
         self.lock_for_closing = threading.Lock()
 
     def get_conn(self):
-        thread_id = threading.get_ident()
-        if thread_id not in self.conn_pool:
-            self.conn_pool[thread_id] = (sqlite3.connect(self.db_path, check_same_thread=False), self.clock)
-            self.clock += 1
+        current_thread = threading.current_thread()
+        thread_id = current_thread.ident
+        conn = self.conn_pool.get(thread_id)
+        if conn is not None:
+            return conn
         # wait for the lock
-        self.lock_for_closing.acquire(blocking=True, timeout=-1)
-        self.remove_oldest()
-        self.lock_for_closing.release()
-        return self.conn_pool[thread_id][0]
-
-    def remove_oldest(self):
-        if len(self.conn_pool) < self.max_conn:
-            return
-        # find the oldest connection
-        time_added_list = []
-        thread_id_list = []
-        for conn_id, (conn, added_time) in self.conn_pool.items():
-            time_added_list.append(added_time)
-            thread_id_list.append(conn_id)
-        # remove the 20% oldest connections
-        n_to_remove = len(self.conn_pool) // 5
-        argsort = sorted(range(len(time_added_list)), key=lambda x: time_added_list[x])
-        for i in range(n_to_remove):
-            thread_id = thread_id_list[argsort[i]]
-            self.conn_pool[thread_id][0].close()
-            del self.conn_pool[thread_id]
-
+        with self.lock_for_closing:
+            # Add a new connection if the thread does not have one
+            if thread_id not in self.conn_pool:
+                self.conn_pool[thread_id] = sqlite3.connect(self.db_path, check_same_thread=False)
+                self.threads[thread_id] = current_thread
+            if len(self.conn_pool) >= self.max_conn:
+                # remove the connections that is not running
+                for tid in list(self.threads.keys()):
+                    if not self.threads[tid].is_alive():
+                        del self.conn_pool[tid]
+                        del self.threads[tid]
+            return self.conn_pool[thread_id]
 
     def close_conn(self):
-        thread_id = threading.get_ident()
-        if thread_id in self.conn_pool:
-            self.conn_pool[thread_id][0].close()
-            del self.conn_pool[thread_id]
+        with self.lock_for_closing:
+            thread_id = threading.get_ident()
+            if thread_id in self.conn_pool:
+                self.conn_pool[thread_id].close()
+                del self.conn_pool[thread_id]
+                del self.threads[thread_id]
 
     def close_all(self):
-        for (conn, added_time) in self.conn_pool.values():
-            conn.close()
-        self.conn_pool = {}
+        with self.lock_for_closing:
+            for conn in self.conn_pool.values():
+                conn.close()
+            self.conn_pool = {}
+            self.threads = {}
