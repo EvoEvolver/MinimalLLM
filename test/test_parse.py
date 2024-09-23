@@ -48,9 +48,6 @@ Generate a json dict with keys 'a' and 'b' and values 1 and 2
 
 
 def test_model_correct():
-    # this import is necessary to test whether it's imported into mllm.config
-    from mllm.config import parse_options
-
     raw_json = """
 {
 no_quote : "
