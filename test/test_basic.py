@@ -24,20 +24,20 @@ def test_system_message():
     print(res)
 
 def test_auto_dedent():
-    chat = Chat()
-    chat += """
+    prompt = """
     Explain the following code
     ```python
-    def greet():
-        print("Hello")
-    greet()
-    ```"""
-    chat += "What is the output?"
-    message = chat.get_messages_to_api()
-    assert message[0]["content"] == """Explain the following code
-```python
-def greet():
     print("Hello")
+    greet()
+    ```
+    """
+    prompt += "What is the output?"
+    chat = Chat(prompt, dedent=True)
+    message = chat.get_messages_to_api()
+    assert message[0]["content"] == """
+Explain the following code
+```python
+print("Hello")
 greet()
 ```
 What is the output?"""

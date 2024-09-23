@@ -40,7 +40,5 @@ default_models = DefaultModels()
 
 default_options = DefaultOptions()
 
-from mllm.utils.parser import parse_options
-
 if __name__ == '__main__':
     print(default_options.get_dict())

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import base64
 import copy
-import textwrap
 import time
 from io import BytesIO
 
@@ -42,7 +41,7 @@ class Chat:
     Class for chat completion
     """
 
-    def __init__(self, user_message=None, system_message: any = None, dedent=True):
+    def __init__(self, user_message=None, system_message: any = None, dedent=False):
         """
         Create a new chat session. You can get the completion result by calling the `complete` method.
         :param user_message: the first message from the user
@@ -83,8 +82,6 @@ class Chat:
         })
 
     def add_user_message(self, content: any):
-        if self.dedent:
-            content = textwrap.dedent(content).strip()
         self._add_message(content, "user")
 
     def add_image_message(self, image_or_image_path: str | Image, more: dict = None):
@@ -159,7 +156,10 @@ class Chat:
             merge_failed = False
             for item in message["content"]:
                 if item["type"] == "text":
-                    content_list.append(item["text"])
+                    text = item["text"]
+                    if self.dedent:
+                        text = remove_all_indents(text)
+                    content_list.append(text)
                 else:
                     merge_failed = True
                     break
@@ -302,3 +302,10 @@ class Chat:
         assert isinstance(other, str)
         self.add_user_message(other)
         return self
+
+
+def remove_all_indents(text: str):
+    # Remove all leading indents at each line
+    lines = text.split("\n")
+    lines = [line.lstrip() for line in lines]
+    return "\n".join(lines)

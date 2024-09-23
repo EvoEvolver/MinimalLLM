@@ -13,6 +13,15 @@ This is a quoted string
     res = Parse.quotes(src)
     assert res == "This is a quoted string"
 
+def test_parse_quotes3():
+    src = """
+123
+123
+"""
+    res = Parse.quotes(src)
+    print(res)
+    assert res == "This is a quoted string"
+
 def test_parse_colon():
     src = "title: This is a colon string"
     res = Parse.colon(src)
