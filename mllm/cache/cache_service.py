@@ -26,13 +26,25 @@ class CacheService:
         self.postfix_stack = [os.path.basename(main_path)]
         self.base_path = os.path.dirname(main_path)
         cache_path = get_cache_path(self.base_path, self.postfix_stack)
-        self.cache_kv: CacheTableKV = CacheTableKV(cache_path)
+        self._cache_kv: CacheTableKV = CacheTableKV(cache_path)
         self.cache_embed: CacheTableEmbed = CacheTableEmbed(os.path.dirname(cache_path))
-        self.cache_kv_other = {self.cache_kv.cache_path: self.cache_kv}
-        self.cache_embed_other = {self.cache_kv.cache_path: self.cache_embed}
+        self.cache_kv_other = {self._cache_kv.cache_path: self._cache_kv}
+        self.cache_embed_other = {self._cache_kv.cache_path: self.cache_embed}
+        self.cache_kv_disabled = False
+
+    def read_kv_cache(self, key: str, type: str):
+        if self.cache_kv_disabled:
+            return None
+        return self._cache_kv.read_cache(key, type)
+    
+    def disable_cache_kv(self):
+        self.cache_kv_disabled = True
+
+    def enable_cache_kv(self):
+        self.cache_kv_disabled = False
 
     def save(self):
-        self.cache_kv.save_all_cache_to_file()
+        self._cache_kv.save_all_cache_to_file()
         for cache_kv in self.cache_kv_other.values():
             cache_kv.save_all_cache_to_file()
         self.cache_embed.save_pending_cache()
@@ -40,7 +52,7 @@ class CacheService:
             cache_embed.save_pending_cache()
 
     def save_used(self):
-        self.cache_kv.save_all_cache_to_file(filter_unused_cache=True)
+        self._cache_kv.save_all_cache_to_file(filter_unused_cache=True)
         for cache_kv in self.cache_kv_other.values():
             cache_kv.save_all_cache_to_file(filter_unused_cache=True)
         # TODO: save only used embedding cache
@@ -50,7 +62,7 @@ class CacheService:
         self.cache_embed.close()
         for cache_embed in self.cache_embed_other.values():
             cache_embed.close()
-        self.cache_kv.close()
+        self._cache_kv.close()
         for cache_kv in self.cache_kv_other.values():
             cache_kv.close()
 
@@ -64,7 +76,7 @@ class CacheService:
                 your codes
         :return: a context manager that refreshes the cache
         """
-        return RefreshCacheContext(self.cache_kv, disable=disable)
+        return RefreshCacheContext(self._cache_kv, disable=disable)
 
     def disable_cache(self, disable=False):
         """
@@ -72,18 +84,18 @@ class CacheService:
                 your codes
         :return:
         """
-        return DisableCacheContext(self.cache_kv, disable=disable)
+        return DisableCacheContext(self._cache_kv, disable=disable)
 
     def _load_cache_on_path(self, postfix: List[str]):
-        self.cache_kv.apply_cache_update()
+        self._cache_kv.apply_cache_update()
         kv_cache_path = get_cache_path(self.base_path, postfix)
         cache_dir = os.path.dirname(kv_cache_path)
 
         if kv_cache_path in self.cache_kv_other:
-            self.cache_kv = self.cache_kv_other[kv_cache_path]
+            self._cache_kv = self.cache_kv_other[kv_cache_path]
         else:
-            self.cache_kv = CacheTableKV(kv_cache_path)
-            self.cache_kv_other[kv_cache_path] = self.cache_kv
+            self._cache_kv = CacheTableKV(kv_cache_path)
+            self.cache_kv_other[kv_cache_path] = self._cache_kv
 
         embed_cache_postfix = "".join(["."+p for p in postfix[1:]])
 

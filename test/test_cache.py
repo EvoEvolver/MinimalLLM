@@ -15,7 +15,7 @@ def test_cached_chat():
 ## See all test_image_chat_cache in test_image.py
 
 def test_multi_thread_cache():
-    print(caching.cache_kv.cache_path)
+    print(caching._cache_kv.cache_path)
     def get_the_same_number(num):
         chat = Chat(f"Output the number {num}")
         res = chat.complete(cache=True)

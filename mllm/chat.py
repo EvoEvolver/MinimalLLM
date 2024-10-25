@@ -248,7 +248,7 @@ class Chat:
         cache = None
         additional_res = {}
         if use_cache:
-            cache = caching.cache_kv.read_cache(messages, "chat_"+model)
+            cache = caching.read_kv_cache(messages, "chat_"+model)
             if cache is not None and cache.is_valid():
                 mock_response = cache.value
                 additional_res["cache_hit"] = True
