@@ -8,14 +8,14 @@ class JsonSpec:
     def __init__(self):
         self.keys = []
 
-    def add_output_key(self, key: str, type: str, document: str):
-        document = remove_all_indents(document)
-        document = document.strip()
+    def add_output_key(self, key: str, type: str, requirement: str = ""):
+        requirement = remove_all_indents(requirement)
+        requirement = requirement.strip()
         self.keys.append(
             {
                 "key": key,
                 "type": type,
-                "document": document
+                "requirement": requirement
             }
         )
 
@@ -24,11 +24,15 @@ class JsonSpec:
         for key_item in self.keys:
             key = key_item["key"]
             type = key_item["type"]
-            document = key_item["document"]
-            keys.append(f'"{key}"({type}): {document}')
+            requirement = key_item["requirement"]
+            if len(requirement) > 0:
+                keys.append(f'"{key}"({type}): {requirement}')
+            else:
+                keys.append(f'"{key}"({type})')
         keys = "\n".join(keys)
         prompt = f"<output>\nYou are required to output a JSON dict with the following keys:\n{keys}\n</output>"
         return prompt
+
 
 class Block:
     def __init__(self, tagname: str, text: str):
@@ -37,10 +41,13 @@ class Block:
 
     def in_prompt(self):
         return f"<{self.tagname}>\n{self.text}\n</{self.tagname}>"
+
+
 class SChat:
     """
     The class for structured chat.
     """
+
     def __init__(self):
         self.blocks = []
         self.output_requirement = JsonSpec()
@@ -68,7 +75,7 @@ class SChat:
         chat += self.output_requirement.in_prompt()
         return chat
 
-    def complete(self, model=None, cache=False, expensive=False, options=None)->Dict:
+    def complete(self, model=None, cache=False, expensive=False, options=None) -> Dict:
         res = self.get_chat().complete(model=model, cache=cache, expensive=expensive,
                                        parse="dict", retry=True, options=options)
         return res
