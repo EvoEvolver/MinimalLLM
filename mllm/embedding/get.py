@@ -24,9 +24,11 @@ class LazyEmbedding:
             LazyEmbedding.lazy_embeddings[model].append(self)
 
 
-    def __array__(self):
+    def __array__(self, *array_args, **array_kwargs):
         if self.embedding is None:
             self.flush()
+        if len(array_args) > 0:
+            return np.array(self.embedding, *array_args, **array_kwargs)
         return self.embedding
 
     def to_list(self):
@@ -35,9 +37,9 @@ class LazyEmbedding:
     def flush(self):
         lazy_embeddings = LazyEmbedding.lazy_embeddings[self.model]
         embeddings = _get_embeddings(self.model, [le.src for le in lazy_embeddings])
-        for i, item in enumerate(lazy_embeddings):
-            item.embedding = embeddings[i]
-            self.cache_embed.add_cache(self.model, item.src, item.embedding)
+        for i, lazy_embedding in enumerate(lazy_embeddings):
+            lazy_embedding.embedding = embeddings[i]
+            self.cache_embed.add_cache(self.model, lazy_embedding.src, lazy_embedding.embedding)
         LazyEmbedding.lazy_embeddings[self.model] = []
 
     def __str__(self):
