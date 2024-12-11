@@ -48,6 +48,9 @@ class LazyEmbedding:
     def __repr__(self):
         return repr(self.__array__())
 
+    def __mul__(self, other):
+        return self.__array__() * other
+
 
 def get_embeddings(texts: list[str], model=None, lazy=True) -> list[list[float]]:
     if model is None:
@@ -59,6 +62,7 @@ def get_embeddings(texts: list[str], model=None, lazy=True) -> list[list[float]]
     texts_without_cache = []
     for i, text in enumerate(texts):
         if len(text) == 0:
+            raise ValueError("Text cannot be empty")
             embeddings.append(0)
             continue
         embedding_from_cache = cache_embed.read_cache(model, text)
@@ -83,6 +87,14 @@ def get_embeddings(texts: list[str], model=None, lazy=True) -> list[list[float]]
 
 
 def _get_embeddings(model, texts_without_cache):
-    res = embedding(model, input=texts_without_cache)
-    res = [np.array(r['embedding'], dtype=np.float32) for r in res.data]
-    return res
+    if len(texts_without_cache) > 2000:
+        res = []
+        for i in range(0, len(texts_without_cache), 2000):
+            raw_res = embedding(model, input=texts_without_cache[i:i + 2000])
+            res += [np.array(r['embedding'], dtype=np.float32) for r in raw_res.data]
+        return res
+    else:
+        raw_res = embedding(model, input=texts_without_cache)
+        res = [np.array(r['embedding'], dtype=np.float32) for r in raw_res.data]
+        return res
+
