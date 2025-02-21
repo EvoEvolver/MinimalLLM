@@ -4,7 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class DefaultModels:
     normal: str = "gpt-4o-mini"
-    expensive: str = "gpt-4-turbo-preview"
+    expensive: str = "gpt-4o"
     vision: str = "gpt-4o"
     embedding: str = "text-embedding-3-large"
 
