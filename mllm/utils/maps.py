@@ -53,12 +53,14 @@ def parallel_map(func, *args, n_workers=None, title=None):
     return enumerate(results)
 
 
-def p_map(func, args, n_workers=None, title=None):
+def p_map(func, args, n_workers=None, title=None, pbar_impl=None):
     """
     Example usage: `for arg, res in parallel_map(lambda x: x + 1, [1, 2, 3, 4, 5], n_workers=4): do_something`
     :param func: The function to apply on each element of args
     :param args: The arguments to apply func
     :param n_workers: Number of workers
+    :param title: Title of the progress bar
+    :param pbar_impl: Progress bar implementation, default is tqdm
     :yield: (arg, res) for each arg in args
     """
     from mllm.cache.cache_service import caching
@@ -73,9 +75,13 @@ def p_map(func, args, n_workers=None, title=None):
     if title is None:
         if hasattr(func, "__name__"):
             title = func.__name__
+
+    if pbar_impl is None:
+        pbar_impl = tqdm
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
         results = []
-        for result in tqdm(executor.map(func, args, timeout=None), total=len(args),
+        for result in pbar_impl(executor.map(func, args, timeout=None), total=len(args),
                            desc=title):
             results.append(result)
             time_now = time.time()
