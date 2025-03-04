@@ -1,5 +1,6 @@
 import concurrent.futures
 import time
+from dataclasses import dataclass
 from typing import List
 
 from mllm.utils.ipython import is_in_notebook
@@ -16,7 +17,8 @@ else:
 
 
 default_parallel_map_config = {
-    "n_workers": 8
+    "n_workers": 8,
+    "pbar": tqdm
 }
 
 
@@ -77,7 +79,7 @@ def p_map(func, args, n_workers=None, title=None, pbar_impl=None):
             title = func.__name__
 
     if pbar_impl is None:
-        pbar_impl = tqdm
+        pbar_impl = default_parallel_map_config["pbar"]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
         results = []
