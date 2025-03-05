@@ -1,6 +1,12 @@
 from mllm import Chat
 from mllm.provider_switch import set_default_to_llama, set_default_to_anthropic, \
-    set_default_to_gemini
+    set_default_to_gemini, set_default_to_deepseek
+
+
+def test_deepseek():
+    set_default_to_deepseek()
+    run_chat()
+
 
 def test_gemini():
     set_default_to_gemini()

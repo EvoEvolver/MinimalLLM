@@ -1,4 +1,5 @@
 from mllm import Chat
+from mllm.provider_switch import set_default_to_deepseek
 from mllm.utils.parser import Parse, parse_json_by_cheap_model
 
 
