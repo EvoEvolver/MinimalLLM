@@ -56,14 +56,10 @@ from mllm.provider_switch import set_default_to_anthropic
 set_default_to_anthropic()
 ```
 
-To setup the API keys for the providers, we recommend to use the following wizard:
+To setup the API keys for the providers, we recommend to use the following streamlit app (run `pip install streamlit` first):
 ```python
-from mllm.setup.wizard import setup_wizard
-setup_wizard()
-```
-You can run in the command line:
-```bash
-python -m mllm.setup.wizard
+from mllm.setup import run_setup_app
+run_setup_app()
 ```
 
 ## Installation

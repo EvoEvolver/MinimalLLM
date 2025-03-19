@@ -1,0 +1,1 @@
+from mllm.setup.run_app import run_setup_app

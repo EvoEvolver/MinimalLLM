@@ -28,15 +28,22 @@ export default defineUserConfig({
             }
         ],
         sidebar: {
-            "/": [{
+            "/": [
+                {
                 text: 'MinimalLLM Docs',
                 children: [
-                    {
-                        text: 'Home',
-                        link: '/',
-                    },
-                ],
-            }],
+                        {
+                            text: 'Home',
+                            link: '/',
+                        },
+                    ],
+                }
+            ],
+            "/parsing": [
+                {
+                    text: 'Parsing options'
+                }
+            ],
         },
         sidebarDepth: 2,
     })
