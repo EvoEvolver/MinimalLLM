@@ -36,12 +36,11 @@ export default defineUserConfig({
                             text: 'Home',
                             link: '/',
                         },
+                        {
+                            text: 'Parsing options',
+                            link: '/parsing',
+                        }
                     ],
-                }
-            ],
-            "/parsing": [
-                {
-                    text: 'Parsing options'
                 }
             ],
         },

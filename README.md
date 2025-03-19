@@ -62,17 +62,6 @@ from mllm.setup import run_setup_app
 run_setup_app()
 ```
 
-## Installation
-
-```bash
-pip install -U git+https://github.com/EvoEvolver/MinimalLLM
-```
-
-To add it to your `requirements.txt`:
-```
-MinimalLLM @ git+https://github.com/EvoEvolver/MinimalLLM
-```
-
 ## Why minimal?
 
 Minimal means stable. We only provide the most basic interfaces and features.
