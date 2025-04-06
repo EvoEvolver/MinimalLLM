@@ -53,6 +53,7 @@ class Chat:
         if user_message is not None:
             self._add_message(user_message, "user")
         self.dedent = dedent
+        self.additional_res = None
 
     """
     ## Message editing and output
@@ -226,6 +227,7 @@ class Chat:
                 except ParseError as e:
                     self._pop_message()
                     raise e
+                self.additional_res = additional_res
                 return final_res
             # Retry if the completion fails on TimeoutError or ParseError
             except (TimeoutError, ParseError) as e:
@@ -263,6 +265,7 @@ class Chat:
             usage = response.model_extra["usage"]
             additional_res["prompt_tokens"] = usage.prompt_tokens
             additional_res["completion_tokens"] = usage.completion_tokens
+            additional_res["full_message"] = response.choices[0].message
         else:
             res = special_handler(messages, options)
         if use_cache and cache is not None:

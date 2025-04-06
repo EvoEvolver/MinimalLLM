@@ -24,7 +24,11 @@ chat = Chat()
 chat += "Give a json dict with keys 'a' and 'b' and values 1 and 2"
 res = chat.complete(parse="dict", cache=True)
 print(res)
+# addtional results will be stored in chat.additional_res
+print(chat.additional_res)
 ```
+
+More options of `chat.complete` is available at [here](./options)
 
 Embedding
 ```python
