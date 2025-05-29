@@ -75,7 +75,10 @@ class Parse:
         try:
             res = json.loads(src[start:end + 1])
         except:
-            raise ValueError(f"Invalid json: {src}")
+            try:
+                res = ast.literal_eval(src[start:end + 1])
+            except:
+                raise ValueError(f"Invalid json: {src}")
         return res
 
     @staticmethod
@@ -87,13 +90,14 @@ class Parse:
         """
         split_lines = src.split("\n")
         for start, line in enumerate(split_lines):
-            if line.startswith("```"):
+            if line.startswith("```") or line.startswith("'''") or line.startswith('"""'):
+                mark = line[:3]
                 title = line[3:]
                 break
         else:
             raise ValueError("No closing quotes")
         for end in range(start + 1, len(split_lines)):
-            if split_lines[end].startswith("```"):
+            if split_lines[end].startswith(mark):
                 break
         else:
             raise ValueError("No closing quotes")

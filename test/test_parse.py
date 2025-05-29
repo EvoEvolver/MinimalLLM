@@ -14,19 +14,36 @@ This is a quoted string
     res = Parse.quotes(src)
     assert res == "This is a quoted string"
 
-def test_parse_quotes3():
+def test_parse_quotes_1():
     src = """
 123
+'''python
+This is a quoted string
+'''
 123
 """
     res = Parse.quotes(src)
-    print(res)
+    assert res == "This is a quoted string"
+
+def test_parse_quotes_2():
+    src = '''
+123
+"""
+This is a quoted string
+"""
+123'''
+    res = Parse.quotes(src)
     assert res == "This is a quoted string"
 
 def test_parse_colon():
     src = "title: This is a colon string"
     res = Parse.colon(src)
     assert res == "This is a colon string"
+
+def test_parse_list():
+    src = """['1', 2, 3, 4]"""
+    res = Parse.list(src)
+    assert res == ['1', 2, 3, 4]
 
 def test_code_gen():
     prompt = """
@@ -51,14 +68,9 @@ Generate a json dict with keys 'a' and 'b' and values 1 and 2
 def test_model_correct():
     raw_json = """
 {
-no_quote : "
-string 
-with 
-line 
-change
-"
+no_quote : "string "with" quotes"
 }    
    
 """
     res = parse_json_by_cheap_model(raw_json)
-    assert res == {'no_quote': '\nstring \nwith \nline \nchange\n'}
+    assert res == {'no_quote': 'string "with" quotes'}
