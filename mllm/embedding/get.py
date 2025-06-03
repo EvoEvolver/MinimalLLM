@@ -85,16 +85,22 @@ def get_embeddings(texts: list[str], model=None, lazy=True) -> list[list[float]]
 
     return embeddings
 
-
 def _get_embeddings(model, texts_without_cache):
+
+    extra_arguments= {}
+    if 'nvidia' in model:
+        # NVIDIA embedding models requires to specify the input type.
+        extra_arguments['input_type']='passage'
+
     if len(texts_without_cache) > 2000:
         res = []
         for i in range(0, len(texts_without_cache), 2000):
-            raw_res = embedding(model, input=texts_without_cache[i:i + 2000])
+            raw_res = embedding(model, input=texts_without_cache[i:i + 2000],**extra_arguments)
             res += [np.array(r['embedding'], dtype=np.float32) for r in raw_res.data]
         return res
     else:
-        raw_res = embedding(model, input=texts_without_cache)
+        raw_res = embedding(model, input=texts_without_cache,**extra_arguments)
         res = [np.array(r['embedding'], dtype=np.float32) for r in raw_res.data]
         return res
+
 
